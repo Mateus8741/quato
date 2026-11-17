@@ -1,0 +1,19 @@
+name: Bug
+description: Algo no Quato não funcionou direito
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes: {label: Versão do Quato, placeholder: "0.3.1"}
+    validations: {required: true}
+  - type: dropdown
+    id: os
+    attributes: {label: Sistema, options: [macOS, Windows]}
+    validations: {required: true}
+  - type: textarea
+    id: what
+    attributes: {label: O que aconteceu e o que você esperava}
+    validations: {required: true}
+  - type: textarea
+    id: steps
+    attributes: {label: Como reproduzir}

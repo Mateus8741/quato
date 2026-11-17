@@ -1,0 +1,8 @@
+name: Sugestão
+description: Ideia de humor, acessório ou recurso novo
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes: {label: Qual é a ideia?}
+    validations: {required: true}

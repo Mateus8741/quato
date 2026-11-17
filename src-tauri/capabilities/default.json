@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Pato e configurações",
+  "windows": ["duck", "settings", "fx"],
+  "permissions": ["core:default"]
+}

@@ -1,0 +1,7 @@
+/* Janela 192x192: faixa de cima 192x64 (plaquinha/balão) e o pato 128x128 em left 32, top 64. */
+html, body { margin: 0; padding: 0; width: 192px; height: 192px; background: transparent; overflow: hidden; user-select: none; -webkit-user-select: none; }
+body { position: relative; }
+canvas { position: absolute; display: block; image-rendering: pixelated; }
+canvas#top { left: 0; top: 0; width: 192px; height: 64px; pointer-events: none; }
+canvas#duck { left: 32px; top: 64px; width: 128px; height: 128px; cursor: grab; }
+canvas#duck:active { cursor: grabbing; }

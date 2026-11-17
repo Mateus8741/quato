@@ -1,0 +1,14 @@
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+preview/
+
+node_modules/
+
+docs/
+# build output
+src-tauri/target/
+dist/
+dist-release/
+site/downloads/
+.DS_Store
+site/

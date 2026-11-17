@@ -1,0 +1,49 @@
+:root { color-scheme: light dark; --bg: #fbfaf6; --fg: #2a2118; --muted: #7a6f63; --card: #fff; --line: #e8e2d6; --accent: #f2a413; --err: #c43d2f; --ok: #2f8a4d; }
+@media (prefers-color-scheme: dark) { :root { --bg: #1d1914; --fg: #f1ebe0; --muted: #a3978a; --card: #27221b; --line: #3a3329; --err: #ff7b6b; --ok: #6fd391; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+main { padding: 20px 22px 28px; }
+h1 { margin: 0 0 14px; font-size: 22px; }
+h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+section.flash { outline: 2px solid var(--accent); }
+.moods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+/* 7 humores: 4 + 3 (com 5 colunas sobrariam 2 sozinhos e as figuras ficariam apertadas). */
+.moods.mood-grid { grid-template-columns: repeat(4, 1fr); }
+.mood { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px; min-width: 0; border: 2px solid transparent; border-radius: 12px; background: transparent; color: inherit; cursor: pointer; font: inherit; font-size: 11px; text-align: center; line-height: 1.2; }
+.mood img { image-rendering: pixelated; }
+.mood:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.mood.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.row:last-of-type { border-bottom: 0; }
+.grow { flex: 1; display: flex; flex-direction: column; }
+small { color: var(--muted); }
+small.err, .err { color: var(--err); }
+.ok { color: var(--ok); }
+kbd { min-width: 90px; text-align: center; padding: 4px 8px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 8px; font: 600 13px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg); }
+kbd.rec { border-color: var(--accent); color: var(--accent); font-size: 11px; }
+button { font: inherit; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: inherit; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: default; }
+.note { color: var(--muted); font-size: 12px; margin: 8px 0; }
+.check { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+kbd.mini { min-width: 0; padding: 1px 6px; font-size: 12px; }
+.water-row { display: flex; align-items: center; gap: 8px; margin: 10px 0 8px; }
+.water-row input { width: 76px; font: inherit; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: inherit; }
+.water-row input[aria-invalid="true"] { border-color: var(--err); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.preset { padding: 3px 8px; font-size: 12px; }
+.preset.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Cor esmaecida quando o humor é o lagartinho (a cor vale só para o pato). */
+section.dim .moods { opacity: .55; }
+section.dim .note { opacity: 1; }
+
+.update-banner { display: flex; align-items: center; gap: 12px; padding: 10px 12px; margin-bottom: 14px; border: 1px solid var(--accent, #d9a400); border-radius: 10px; background: rgba(255, 200, 0, .14); }
+.update-banner .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.update-banner small { color: var(--muted); }
+
+.about { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(128, 128, 128, .25); color: var(--muted); font-size: 12px; }
+.about .note { margin: 0; }
