@@ -5,7 +5,7 @@ Pato de desktop (Mac e Windows). Fica manso numa janelinha; com um atalho global
 Tauri 2 (Rust) + TypeScript. O pato é pixel art desenhada por código.
 
 ## Problemas e sugestões
-Abra uma [issue](https://github.com/Mateus8741/quato-o-pato/issues/new/choose) (bug ou sugestão). Informe a versão e o sistema (macOS ou Windows).
+Abra uma [issue](https://github.com/Mateus8741/quato/issues/new/choose) (bug ou sugestão). Informe a versão e o sistema (macOS ou Windows).
 
 ## Rodar
 ```bash
