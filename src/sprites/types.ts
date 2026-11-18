@@ -4,8 +4,8 @@ import type { Mood } from '../shared/types.ts';
 export type PixelGrid = readonly string[];
 /** Um caractere -> cor "#rrggbb" ou "#rrggbbaa". */
 export type Palette = Readonly<Record<string, string>>;
-export type AnimName = 'idle' | 'walk' | 'run' | 'grab' | 'sleep' | 'dance';
-export const ANIM_NAMES: readonly AnimName[] = ['idle', 'walk', 'run', 'grab', 'sleep', 'dance'];
+export type AnimName = 'idle' | 'walk' | 'run' | 'grab' | 'sleep' | 'dance' | 'eat';
+export const ANIM_NAMES: readonly AnimName[] = ['idle', 'walk', 'run', 'grab', 'sleep', 'dance', 'eat'];
 export type EffectName = 'sparkle' | 'steam' | 'tear' | 'dots' | 'zzz' | 'notes' | 'drip' | 'question';
 /** Quem aparece na janela: o pato, ou o lagartinho no humor 'lagarto'. */
 export type Character = 'duck' | 'lizard';

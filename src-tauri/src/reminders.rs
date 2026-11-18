@@ -454,7 +454,20 @@ pub struct RemindersStatus {
 // ---------------------------------------------------------------- cola com o app
 
 fn sign(app: &AppHandle, text: &str, duration_ms: u32) {
-    let _ = app.emit(EV_DUCK_SIGN, DuckSign { kind: SignKind::Water, text: text.into(), duration_ms });
+    sign_kind(app, SignKind::Water, text, duration_ms);
+}
+
+fn sign_kind(app: &AppHandle, kind: SignKind, text: &str, duration_ms: u32) {
+    let _ = app.emit(EV_DUCK_SIGN, DuckSign { kind, text: text.into(), duration_ms });
+}
+
+/// Ícone da plaquinha de cada lembrete.
+fn sign_kind_of(kind: ReminderKind) -> SignKind {
+    match kind {
+        ReminderKind::Posture => SignKind::Posture,
+        ReminderKind::Stretch => SignKind::Stretch,
+        ReminderKind::Eyes => SignKind::Eyes,
+    }
 }
 
 fn engine<R>(app: &AppHandle, f: impl FnOnce(&mut Engine) -> R) -> R {
@@ -506,7 +519,7 @@ pub fn done(app: &AppHandle, kind: ReminderKind) {
 
 /// Mostra a plaquinha agora (botão "Testar plaquinha").
 pub fn show_now(app: &AppHandle, kind: ReminderKind) {
-    sign(app, &text_of(app, kind), REMINDER_SIGN_MS);
+    sign_kind(app, sign_kind_of(kind), &text_of(app, kind), REMINDER_SIGN_MS);
 }
 
 pub fn set_focus_config(app: &AppHandle, focus_min: u32, break_min: u32, cycles: u32) {
@@ -599,7 +612,7 @@ pub fn toggle_focus(app: &AppHandle) {
 fn handle(app: &AppHandle, ev: Event) {
     match ev {
         Event::Remind(kind) => {
-            sign(app, &text_of(app, kind), REMINDER_SIGN_MS);
+            sign_kind(app, sign_kind_of(kind), &text_of(app, kind), REMINDER_SIGN_MS);
             crate::actions::emit_settings(app);
         }
         Event::Focus(FocusEvent::BreakStarted) => {

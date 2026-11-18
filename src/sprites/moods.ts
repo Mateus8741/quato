@@ -2,7 +2,7 @@ import type { Mood } from '../shared/types.ts';
 import type { MoodSkin } from './types.ts';
 
 // O humor muda só a expressão, o efeito e o ritmo. A cor do corpo vem de colors.ts.
-const fpsDefault = { idle: 2, walk: 6, run: 10, grab: 8, sleep: 2, dance: 8 } as const;
+const fpsDefault = { idle: 2, walk: 6, run: 10, grab: 8, sleep: 2, dance: 8, eat: 6 } as const;
 
 export const SKINS: Readonly<Record<Mood, MoodSkin>> = {
   feliz: {

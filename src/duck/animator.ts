@@ -13,6 +13,7 @@ export function animFor(view: DuckView): AnimName {
   if (view.mode === 'sleep') return 'sleep';
   if (view.mode === 'grab' || view.mode === 'held') return 'grab';
   if (view.mode === 'dance') return 'dance';
+  if (view.mode === 'eat') return 'eat';
   if (view.pace === 'fast') return 'run';
   if (view.pace === 'slow') return 'walk';
   return 'idle';

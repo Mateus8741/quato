@@ -72,7 +72,61 @@ const UPDATE = [
   'yyyyyyy',
 ];
 const UPDATE_PAL = { g: '#1f7a3a', L: '#7be08f', y: '#ffd23f' };
-export type SignKind = 'water' | 'update' | 'speech';
+
+// Postura: pessoa sentada com as costas retas (cabeça, tronco, cadeira).
+const POSTURE = [
+  '..hhh..',
+  '..hhh..',
+  '...b...',
+  '..bbb..',
+  '..bbb..',
+  '..bbbll',
+  'ccccc.l',
+  'c...c..',
+  'c...c..',
+];
+const POSTURE_PAL = { h: '#f2b98a', b: '#2f6fd0', l: '#1d4a8c', c: '#4a2a12' };
+
+// Alongar: pessoa com os braços esticados para cima.
+const STRETCH = [
+  'a.....a',
+  'a.hhh.a',
+  '.ahhha.',
+  '..aba..',
+  '...b...',
+  '...b...',
+  '..b.b..',
+  '..b.b..',
+  '.bb.bb.',
+];
+const STRETCH_PAL = { h: '#f2b98a', a: '#f2b98a', b: '#d8523f' };
+
+// Vista: olho com cílios e íris azul.
+const EYES = [
+  '.k.k.k.',
+  '..ooo..',
+  '.owwwo.',
+  'owiiiwo',
+  'owipiwo',
+  '.owwwo.',
+  '..ooo..',
+  '.......',
+  '.......',
+];
+const EYES_PAL = { o: '#1d1612', k: '#1d1612', w: '#ffffff', i: '#3a8fe8', p: '#1d1612' };
+
+export type SignKind = 'water' | 'update' | 'speech' | 'posture' | 'stretch' | 'eyes';
+
+/** Ícone (7 pixels de largura) e cores de cada plaquinha com ícone. */
+export function signIcon(kind: SignKind): { grid: readonly string[]; pal: Readonly<Record<string, string>> } {
+  switch (kind) {
+    case 'update': return { grid: UPDATE, pal: UPDATE_PAL };
+    case 'posture': return { grid: POSTURE, pal: POSTURE_PAL };
+    case 'stretch': return { grid: STRETCH, pal: STRETCH_PAL };
+    case 'eyes': return { grid: EYES, pal: EYES_PAL };
+    default: return { grid: DROP, pal: DROP_PAL };
+  }
+}
 
 const WOOD = { line: '#4a2a12', board: '#d9a066', light: '#f0c48c', grain: '#bf844c', nail: '#6b4423', post: '#a8693a', ink: '#4a2a12' };
 
@@ -102,8 +156,7 @@ export function renderSign(text: string, kind: SignKind = 'water'): Pix {
   if (kind === 'speech') return renderSpeech(text);
   const p = newPix();
   const L = signLayout(text);
-  const icon = kind === 'update' ? UPDATE : DROP;
-  const iconPal = kind === 'update' ? UPDATE_PAL : DROP_PAL;
+  const { grid: icon, pal: iconPal } = signIcon(kind);
   // pauzinho
   fill(p, L.anchorX - 2, L.y + L.h - 1, 4, TOP_H - (L.y + L.h - 1), WOOD.line);
   fill(p, L.anchorX - 1, L.y + L.h - 1, 2, TOP_H - (L.y + L.h - 1), WOOD.post);

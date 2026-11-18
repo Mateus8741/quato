@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CELL_H, GLYPHS, glyph, hasGlyph, textWidth, unknownChars, wrapBalanced, wrapText } from './font.ts';
-import { TOP_H, TOP_W, mouthToTopX, renderBalloon, renderSign, signLayout } from './overlay.ts';
+import { signIcon, TOP_H, TOP_W, mouthToTopX, renderBalloon, renderSign, signLayout } from './overlay.ts';
 import { DOUBT_DURATION_MS, DOUBT_MAX_GAP_MS, DOUBT_MIN_GAP_MS, doubtGap, doubtState } from './doubt.ts';
 import { SCREAM_DURATION_MS, SCREAM_MAX_GAP_MS, SCREAM_MIN_GAP_MS, SCREAM_TEXT, screamGap, screamState, shakeOffset } from './scream.ts';
 
@@ -142,5 +142,18 @@ describe('dúvida aleatória e plaquinha de update', () => {
     expect(u.h).toBe(TOP_H);
     expect(Buffer.compare(Buffer.from(w.data), Buffer.from(u.data))).not.toBe(0);
     expect(u.data.some((v, i) => i % 4 === 3 && v > 0)).toBe(true);
+  });
+
+  it('postura, alongar e vista têm ícone próprio de 7 px, diferente da gotinha e entre si', () => {
+    const kinds = ['water', 'posture', 'stretch', 'eyes'] as const;
+    for (const k of kinds) {
+      const { grid, pal } = signIcon(k);
+      for (const row of grid) {
+        expect(row.length, k).toBe(7);
+        for (const ch of row) if (ch !== '.') expect(pal[ch], `${k} cor ${ch}`).toBeDefined();
+      }
+    }
+    const sigs = kinds.map((k) => Buffer.from(renderSign('Ajeite a postura!', k).data).toString('base64'));
+    expect(new Set(sigs).size).toBe(kinds.length);
   });
 });

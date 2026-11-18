@@ -1,7 +1,7 @@
 // Espelho dos tipos de src-tauri/src/events.rs. Mantenha os dois lados iguais.
 export type Mood = 'feliz' | 'raiva' | 'triste' | 'sozinho' | 'sono' | 'danca' | 'lagarto' | 'duvida';
 export const MOODS: readonly Mood[] = ['feliz', 'raiva', 'triste', 'sozinho', 'sono', 'danca', 'lagarto', 'duvida'];
-export type DuckMode = 'idle' | 'walk' | 'chase' | 'grab' | 'sleep' | 'held' | 'dance';
+export type DuckMode = 'idle' | 'walk' | 'chase' | 'grab' | 'sleep' | 'held' | 'dance' | 'eat';
 export type Pace = 'still' | 'slow' | 'fast';
 export type Facing = 'left' | 'right';
 export type Platform = 'macos' | 'windows';
@@ -137,9 +137,9 @@ export interface DragError {
   message: string;
 }
 
-/** Evento `duck:sign`: o pato mostra uma plaquinha (água, atualização) ou um balão de fala (`speech`). */
+/** Evento `duck:sign`: o pato mostra uma plaquinha (água, lembretes, atualização) ou um balão de fala (`speech`). */
 export interface DuckSign {
-  kind: 'water' | 'update' | 'speech';
+  kind: 'water' | 'update' | 'speech' | 'posture' | 'stretch' | 'eyes';
   text: string;
   /** Quanto tempo a plaquinha fica na tela; 0 = esconder agora. */
   durationMs: number;

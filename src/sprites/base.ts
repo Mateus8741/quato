@@ -78,6 +78,12 @@ export const ANIMS: Readonly<Record<AnimName, readonly Frame[]>> = {
   ],
   sleep: [duck({ headDx: -4, headDy: 4, tuck: true }), duck({ headDx: -4, headDy: 5, bob: 1, tuck: true })],
   // dança: balança a cabeça de um lado para o outro, pula num pé e no outro e bate as asas
+  // comendo a migalha: a cabeça desce até o chão e bica; entre uma bicada e outra sobe um pouco
+  eat: [
+    duck({ headDx: 2, headDy: 3, beakOpen: true }),
+    duck({ headDx: 2, headDy: 6 }),
+    duck({ headDx: 2, headDy: 4, beakOpen: true }),
+  ],
   dance: [
     duck({ headDx: -1, wing: 'up', footBack: 1 }),
     duck({ headDx: 0, headDy: 1, bob: -1, wing: 'back', beakOpen: true, footBack: 2, footFront: 2 }),
