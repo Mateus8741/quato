@@ -158,7 +158,7 @@ for (let cp = 0x20; cp <= 0x24f; cp++) {
   same('fonte', String(hasGlyph(ch)), String(ov.hasGlyph(ch)), () => `hasGlyph(${ch})`);
   same('fonte', json(glyph(ch) ?? null), json(ov.glyph(ch) ?? null), () => `glyph(${ch})`);
 }
-const texts = ['Hora de beber água!', 'hora de beber água!', 'Beba água', 'AÇÃO É ÓTIMO, VOCÊ? SÉRIO: 10-20.', 'Bebeu? Bebeu!', 'Supercalifragilisticexpialidocious agora', 'Água', '', SCREAM_TEXT, 'Ç ã õ à â ê í ú'];
+const texts = ['Hora de beber água!', 'hora de beber água!', 'Beba água', 'AÇÃO É ÓTIMO, VOCÊ? SÉRIO: 10-20.', 'Bebeu? Bebeu!', 'Supercalifragilisticexpialidocious agora', 'Água', '', SCREAM_TEXT, 'Ç ã õ à â ê í ú', 'Hoje eu acordei com vontade de pão de queijo', 'Olhe a 6 m por 20 s'];
 for (const t of texts) {
   for (const w of [10, 30, 62, 90]) {
     same('fonte', json(wrapText(t, w)), json(ov.wrapText(t, w)), () => `wrapText(${t},${w})`);
@@ -167,7 +167,7 @@ for (const t of texts) {
   same('fonte', String(textWidth(t)), String(ov.textWidth(t)), () => `textWidth(${t})`);
   same('plaquinha', json(signLayout(t)), json(ov.signLayout(t)), () => `signLayout(${t})`);
   same('plaquinha', renderSign(t).data, ov.renderSign(t).data, () => `renderSign(${t})`);
-  for (const kind of ['water', 'update'] as const) {
+  for (const kind of ['water', 'update', 'speech', 'posture', 'stretch', 'eyes'] as const) {
     same('plaquinha', renderSign(t, kind).data, ov.renderSign(t, kind).data, () => `renderSign(${t},${kind})`);
   }
 }
