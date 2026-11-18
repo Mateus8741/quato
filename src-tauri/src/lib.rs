@@ -10,6 +10,7 @@ pub mod look;
 pub mod hold;
 pub mod platform;
 pub mod platform_input;
+pub mod reminders;
 pub mod pointer;
 pub mod shortcuts;
 pub mod sim;
@@ -49,6 +50,11 @@ pub fn run() {
             commands::set_water,
             commands::water_drank,
             commands::water_test,
+            commands::set_reminder,
+            commands::reminder_done,
+            commands::reminder_test,
+            commands::set_focus_config,
+            commands::focus_toggle,
             commands::set_dance_on_music,
             commands::check_update,
             commands::open_update,
@@ -69,6 +75,7 @@ pub fn run() {
             sim::spawn(handle.clone(), rx, mood);
             hold::spawn(handle.clone());
             water::spawn(handle.clone());
+            reminders::spawn(handle.clone());
             audio::spawn(handle.clone());
             update::spawn(handle.clone());
             {
