@@ -48,6 +48,8 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let sep2 = PredefinedMenuItem::separator(app)?;
     let menu = Menu::with_items(app, &[&chase, &roam, &moods, &drag, &release, &sep2, &water, &drank, &sep, &update, &settings, &quit])?;
 
+    crate::autostart::add_to_menu(app, &menu)?;
+
     *app.state::<AppState>().tray.lock().unwrap() = Some(TrayHandles { chase, roam, moods: mood_items, drag, water, update });
 
     TrayIconBuilder::with_id("main")
@@ -85,6 +87,7 @@ fn on_menu(app: &AppHandle, id: &str) {
         "water" => crate::water::toggle(app),
         "water_drank" => crate::water::drank(app),
         "update" => crate::update::on_tray_click(app),
+        crate::autostart::MENU_ID => crate::autostart::toggle(app),
         "settings" => crate::windows::open_settings(app, None),
         "quit" => {
             actions::send(app, SimCommand::Shutdown);
@@ -113,6 +116,7 @@ pub fn sync(app: &AppHandle) {
         let cfg = st.config.lock().unwrap();
         (cfg.mood, cfg.free_roam, cfg.water.enabled)
     };
+    crate::autostart::sync_tray(app);
     let label = chase_label(app);
     let update_text = update_label(crate::update::current(app).as_ref());
     let handles = st.tray.lock().unwrap().as_ref().map(|h| (h.chase.clone(), h.roam.clone(), h.drag.clone(), h.moods.clone(), h.water.clone(), h.update.clone()));

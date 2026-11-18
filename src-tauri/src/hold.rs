@@ -98,7 +98,13 @@ pub fn spawn(app: AppHandle) {
             loop {
                 std::thread::sleep(Duration::from_millis(25));
                 let geom = *app.state::<AppState>().duck_geom.lock().unwrap();
-                if !geom.shown {
+                if !geom.shown || crate::dnd::is_hidden() {
+                    if capturing {
+                        if let Some(w) = app.get_webview_window("duck") {
+                            let _ = w.set_ignore_cursor_events(true);
+                        }
+                        capturing = false;
+                    }
                     continue;
                 }
                 let out = tracker.update(&platform_input::read(), &hit_areas(geom.pos, geom.scale), start.elapsed().as_secs_f64());

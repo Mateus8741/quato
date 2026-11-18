@@ -41,6 +41,10 @@ export interface Config {
   notifiedAt?: number;
   /** Acessórios sazonais (Natal, Halloween, Ano Novo) quando o espaço está livre. */
   seasonalAccessories?: boolean;
+  /** Modo "não perturbe": esconde o pato com app em tela cheia no monitor dele. */
+  dnd: boolean;
+  /** Abrir ao ligar o computador. */
+  launchAtLogin: boolean;
 }
 
 export interface WaterConfig {

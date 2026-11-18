@@ -36,6 +36,9 @@ struct Runtime {
     armed: (Instant, bool),
     burst: crate::fire::Burst,
     fx: crate::fx::Fx,
+    /// Vigia do modo "não perturbe" e se a janela já foi escondida por ele.
+    dnd: crate::dnd::Watcher,
+    dnd_applied: bool,
 }
 
 pub fn spawn(app: AppHandle, rx: Receiver<SimCommand>, mood: Mood) {
@@ -58,6 +61,8 @@ pub fn spawn(app: AppHandle, rx: Receiver<SimCommand>, mood: Mood) {
                 armed: (Instant::now() - Duration::from_secs(10), false),
                 burst: crate::fire::Burst::new(seed ^ 0x9e37_79b9),
                 fx: crate::fx::Fx::new(),
+                dnd: crate::dnd::Watcher::new(),
+                dnd_applied: false,
             };
             run(&mut rt, rx);
         })
@@ -176,6 +181,22 @@ fn tick(rt: &mut Runtime, dt: f32, now: f64) -> Duration {
     let Some(prim) = platform::primary(&rt.app, &all) else { return IDLE_TICK };
     let Some(bounds) = platform::union_work(&all) else { return IDLE_TICK };
     let Some(cursor) = platform::cursor(&rt.app, prim.scale) else { return IDLE_TICK };
+
+    // Modo "não perturbe": com app em tela cheia no monitor do pato, só esconde as janelas e para
+    // a simulação (nada de perseguir nem mexer no mouse). Ao voltar, `rt.shown = false` mostra de novo.
+    if rt.dnd.poll(&rt.app, &all, rt.sim.pos()) {
+        if !rt.dnd_applied {
+            rt.dnd_applied = true;
+            rt.sim.apply(SimCommand::ReleaseMouse, now);
+            rt.grab_started = None;
+            let _ = win.hide();
+            rt.fx.suspend(&rt.app);
+            rt.shown = false;
+            rt.app.state::<AppState>().duck_geom.lock().unwrap().shown = false;
+        }
+        return Duration::from_millis(250);
+    }
+    rt.dnd_applied = false;
 
     let unit_scale = platform::unit_scale(&all, rt.sim.pos());
     // Canto padrão: afastado o bastante para a plaquinha (192 de largura) não sair da tela.

@@ -128,6 +128,17 @@ impl Fx {
         self.visible_until = now + VISIBLE_SECS;
     }
 
+    /// Modo "não perturbe": esconde a janela já, sem fechar; o próximo tiro mostra de novo.
+    pub fn suspend(&mut self, app: &AppHandle) {
+        if let Some(win) = app.get_webview_window(LABEL) {
+            let _ = win.hide();
+            let _ = app.emit_to(LABEL, EV_FX_CLEAR, ());
+        }
+        self.shown = false;
+        self.area = None;
+        self.pending.clear();
+    }
+
     /// Todo tick: esconde a janela quando não sobrou nada e fecha se ficou muito tempo sem uso.
     pub fn housekeeping(&mut self, app: &AppHandle, now: f64) {
         let Some(win) = app.get_webview_window(LABEL) else {

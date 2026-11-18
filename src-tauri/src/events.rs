@@ -182,6 +182,10 @@ pub struct Config {
     pub notified_at: u64,
     /// Acessórios sazonais (Natal, Halloween, Ano Novo) quando o espaço está livre. Começa desligado.
     pub seasonal_accessories: bool,
+    /// Modo "não perturbe": esconde o pato quando há app em tela cheia no monitor dele.
+    pub dnd: bool,
+    /// Abrir ao ligar o computador (espelha o estado real do sistema).
+    pub launch_at_login: bool,
 }
 
 /// Aparência do pato: o que a janela do pato precisa saber além do `DuckView`.
@@ -212,6 +216,8 @@ impl Default for Config {
             notified_update: None,
             notified_at: 0,
             seasonal_accessories: false,
+            dnd: true,
+            launch_at_login: false,
         }
     }
 }

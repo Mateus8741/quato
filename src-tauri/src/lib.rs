@@ -1,8 +1,10 @@
 pub mod accessibility;
 pub mod actions;
 pub mod audio;
+pub mod autostart;
 pub mod commands;
 pub mod config;
+pub mod dnd;
 pub mod events;
 pub mod fire;
 pub mod fx;
@@ -27,6 +29,7 @@ use tauri::{Manager, RunEvent};
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().with_handler(shortcuts::handler).build())
+        .plugin(autostart::plugin())
         .invoke_handler(tauri::generate_handler![
             commands::duck_ready,
             commands::get_duck_view,
@@ -53,6 +56,8 @@ pub fn run() {
             commands::set_seasonal_accessories,
             commands::check_update,
             commands::open_update,
+            commands::set_dnd,
+            commands::set_launch_at_login,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
@@ -65,6 +70,7 @@ pub fn run() {
             let mood = cfg.mood;
             app.manage(AppState::new(tx, cfg, view));
 
+            autostart::reconcile(&handle);
             shortcuts::register_all(&handle);
             tray::create(&handle)?;
             sim::spawn(handle.clone(), rx, mood);
