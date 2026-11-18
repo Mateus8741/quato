@@ -1,10 +1,11 @@
 import { api, EV, on } from '../shared/ipc.ts';
-import type { AccessibilityStatus, DragError, Look, Mood, SettingsView, ShortcutField } from '../shared/types.ts';
-import { MOODS } from '../shared/types.ts';
+import type { AccessibilityStatus, DragError, Look, Mood, SettingsView, ShortcutField, SpeechFrequency } from '../shared/types.ts';
+import { MOODS, SPEECH_FREQUENCIES, SPEECH_MAX_CHARS } from '../shared/types.ts';
 import { composeRGBA, framesFor } from '../sprites/compose.ts';
 import { ACCESSORIES, COLORS, SKINS } from '../sprites/index.ts';
 import { formatAccelerator } from './accelerator.ts';
 import { recordShortcut } from './shortcut-recorder.ts';
+import { addPhrase, removePhrase, SPEECH_HINTS, SPEECH_LABELS } from './speech.ts';
 import { nextReminderText, parseInterval, WATER_PRESETS } from './water.ts';
 import { bindReminders, REMINDER_INPUTS, remindersHtml } from './reminders.ts';
 
@@ -18,6 +19,9 @@ let pollTimer: number | undefined;
 let waterMsg = '';
 let updateMsg = '';
 let updateBusy = false;
+/** Frase digitada e ainda não adicionada (sobrevive ao redesenho da tela), e o erro dela. */
+let speechDraft = '';
+let speechMsg = '';
 /** Segundos até o próximo lembrete, e quando isso foi lido (para a contagem local). */
 let waterNext: { sec: number | null; at: number } = { sec: null, at: 0 };
 /** Chegou uma atualização enquanto a pessoa digitava os minutos: redesenha ao sair do campo. */
@@ -26,6 +30,7 @@ let pendingRender = false;
 const FIELDS: { field: ShortcutField; label: string; hint: string }[] = [
   { field: 'toggleChase', label: 'Perseguir o cursor', hint: 'Liga e desliga a perseguição' },
   { field: 'cycleMood', label: 'Trocar de humor', hint: 'Passa para o próximo humor' },
+  { field: 'dropCrumb', label: 'Jogar uma migalha', hint: 'Joga uma migalha onde está o cursor; o pato vai comer (só visual)' },
 ];
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -93,6 +98,27 @@ function render(): void {
       <div class="buttons"><button data-water-test>Testar plaquinha</button>
       <button data-water-drank ${water.enabled ? '' : 'disabled'}>Já bebi água</button></div></section>`;
 
+  const speech = v.config.speech;
+  const freqHtml = SPEECH_FREQUENCIES.map((f) =>
+    `<button class="preset ${speech.frequency === f ? 'on' : ''}" data-speech-freq="${f}" aria-pressed="${speech.frequency === f}">${SPEECH_LABELS[f]}</button>`,
+  ).join('');
+  const phrasesHtml = speech.extra.length
+    ? `<ul class="phrases">${speech.extra.map((p, i) => `<li><span class="grow">${esc(p)}</span><button class="preset" data-speech-del="${i}" aria-label="Remover a frase ${esc(p)}">Remover</button></li>`).join('')}</ul>`
+    : '<p class="note">Nenhuma frase sua ainda.</p>';
+  const speechHtml = `<section id="speech"><h2>Fala</h2>
+      <p class="note">De vez em quando o pato solta uma frase num balão, de acordo com o humor. Ele não fala dormindo, no colo nem junto de um lembrete.</p>
+      <div class="presets" role="group" aria-label="Frequência da fala">${freqHtml}</div>
+      <p class="note" id="speech-hint">${esc(SPEECH_HINTS[speech.frequency])}</p>
+      <h3>Suas frases</h3>
+      ${phrasesHtml}
+      <div class="water-row">
+        <input id="speech-input" type="text" maxlength="${SPEECH_MAX_CHARS}" placeholder="Escreva uma frase" value="${esc(speechDraft)}" data-speech-input aria-label="Nova frase" aria-describedby="speech-help" />
+        <button data-speech-add>Adicionar</button>
+      </div>
+      ${speechMsg ? `<p class="err" role="alert">${esc(speechMsg)}</p>` : ''}
+      <p class="note" id="speech-help">Até ${SPEECH_MAX_CHARS} letras (letras, números e ! ? . , - : '). Elas valem para qualquer humor e saem em metade das falas.</p>
+      <div class="buttons"><button data-speech-test>Testar fala</button></div></section>`;
+
   const acc = v.accessibility;
   const accHtml = acc.required
     ? `<section id="accessibility"><h2>Permissão de Acessibilidade</h2>
@@ -129,6 +155,7 @@ function render(): void {
       <button data-home-reset ${v.config.home ? '' : 'disabled'}>Voltar para o canto</button></section>
     ${waterHtml}
     ${remindersHtml(v)}
+    ${speechHtml}
     <section><h2>Dança</h2>
       <label class="check"><input type="checkbox" data-dance-music ${v.config.danceOnMusic ? 'checked' : ''} /> Dançar quando tiver som tocando</label>
       <p class="note">Ele percebe quando tem <b>som saindo do computador</b>, seja música, vídeo, chamada ou um aviso, e dança enquanto durar (para uns segundos depois que o som acaba). Não ouve nem grava nada: só pergunta ao sistema se a saída de som está tocando. ${platform === 'macos' ? 'No Mac, alguns apps deixam o som “aberto” mesmo em silêncio; aí ele pode dançar sem música.' : ''}</p>
@@ -184,7 +211,7 @@ function setView(v: SettingsView): void {
   view = v;
   waterNext = { sec: v.waterNextInSec, at: performance.now() };
   // Não apaga o que a pessoa está digitando no campo de minutos.
-  if ((document.activeElement as HTMLElement | null)?.matches?.(`[data-water-min],${REMINDER_INPUTS}`)) {
+  if ((document.activeElement as HTMLElement | null)?.matches?.(`[data-water-min],[data-speech-input],${REMINDER_INPUTS}`)) {
     pendingRender = true;
     return;
   }
@@ -206,6 +233,21 @@ async function applyWaterInterval(input: HTMLInputElement): Promise<void> {
   input.value = String(n);
   input.removeAttribute('aria-invalid');
   setView(await api.setWater(view.config.water.enabled, n));
+}
+
+async function addSpeechPhrase(): Promise<void> {
+  if (!view) return;
+  const r = addPhrase(view.config.speech.extra, speechDraft);
+  if (!r.ok) {
+    speechMsg = r.error;
+    render();
+    document.querySelector<HTMLInputElement>('[data-speech-input]')?.focus();
+    return;
+  }
+  speechMsg = '';
+  speechDraft = '';
+  setView(await api.setSpeech(view.config.speech.frequency, r.list));
+  document.querySelector<HTMLInputElement>('[data-speech-input]')?.focus();
 }
 
 // Atualiza só o texto do próximo lembrete (sem redesenhar a tela toda).
@@ -236,9 +278,17 @@ function scrollToSection(name: string | null): void {
 }
 
 app.addEventListener('click', async (e) => {
-  const t = (e.target as HTMLElement).closest<HTMLElement>('[data-mood],[data-color],[data-acc],[data-acc-clear],[data-home-reset],[data-record],[data-reset],[data-access],[data-water-preset],[data-water-test],[data-water-drank],[data-update-open],[data-update-check]');
+  const t = (e.target as HTMLElement).closest<HTMLElement>('[data-mood],[data-color],[data-acc],[data-acc-clear],[data-home-reset],[data-record],[data-reset],[data-access],[data-water-preset],[data-water-test],[data-water-drank],[data-speech-freq],[data-speech-add],[data-speech-del],[data-speech-test],[data-update-open],[data-update-check]');
   if (!t || !view) return;
   if (t.dataset.updateOpen !== undefined) await api.openUpdate();
+  else if (t.dataset.speechFreq) {
+    speechMsg = '';
+    setView(await api.setSpeech(t.dataset.speechFreq as SpeechFrequency, view.config.speech.extra));
+  } else if (t.dataset.speechAdd !== undefined) await addSpeechPhrase();
+  else if (t.dataset.speechDel !== undefined) {
+    speechMsg = '';
+    setView(await api.setSpeech(view.config.speech.frequency, removePhrase(view.config.speech.extra, Number(t.dataset.speechDel))));
+  } else if (t.dataset.speechTest !== undefined) await api.speechTest();
   else if (t.dataset.updateCheck !== undefined) await checkForUpdate();
   else if (t.dataset.waterPreset) {
     waterMsg = '';
@@ -319,14 +369,24 @@ async function start(): Promise<void> {
 }
 
 app.addEventListener('focusout', (e) => {
-  if ((e.target as HTMLElement).matches(`[data-water-min],${REMINDER_INPUTS}`) && pendingRender) {
+  if ((e.target as HTMLElement).matches(`[data-water-min],[data-speech-input],${REMINDER_INPUTS}`) && pendingRender) {
     // Espera o 'change' (que vem logo depois) antes de redesenhar.
     window.setTimeout(() => { if (pendingRender && view) setView(view); }, 0);
   }
 });
 
+app.addEventListener('input', (e) => {
+  const t = e.target as HTMLInputElement;
+  if (t.matches('[data-speech-input]')) speechDraft = t.value;
+});
+
 app.addEventListener('keydown', (e) => {
   const t = e.target as HTMLInputElement;
+  if (e.key === 'Enter' && t.matches('[data-speech-input]')) {
+    e.preventDefault();
+    void addSpeechPhrase();
+    return;
+  }
   if (e.key === 'Enter' && t.matches('[data-water-min]')) t.blur();
 });
 

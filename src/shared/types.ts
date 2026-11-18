@@ -18,6 +18,8 @@ export interface DuckView {
 export interface ShortcutsConfig {
   toggleChase: string;
   cycleMood: string;
+  /** Joga uma migalha na posição do cursor. */
+  dropCrumb: string;
 }
 export type ShortcutField = keyof ShortcutsConfig;
 
@@ -40,6 +42,8 @@ export interface Config {
   focus: FocusConfig;
   /** Dança quando tem som saindo do computador. */
   danceOnMusic: boolean;
+  /** Balão de fala do pato. */
+  speech: SpeechConfig;
   /** Última versão nova já avisada com a plaquinha. */
   notifiedUpdate?: string | null;
   notifiedAt?: number;
@@ -56,6 +60,20 @@ export interface WaterConfig {
   intervalMin: number;
 }
 
+/** Com que frequência o pato fala sozinho. Espelha `SpeechFrequency` do Rust. */
+export type SpeechFrequency = 'never' | 'rare' | 'sometimes' | 'always';
+export const SPEECH_FREQUENCIES: readonly SpeechFrequency[] = ['never', 'rare', 'sometimes', 'always'];
+
+export interface SpeechConfig {
+  frequency: SpeechFrequency;
+  /** Frases extras da pessoa (valem para qualquer humor). */
+  extra: string[];
+}
+
+/** Limites das frases extras (o balão tem 2 linhas); o Rust arruma de novo ao salvar. */
+export const SPEECH_MAX_EXTRA = 30;
+export const SPEECH_MAX_CHARS = 36;
+
 export const WATER_MIN_INTERVAL = 1;
 export const WATER_MAX_INTERVAL = 720;
 
@@ -70,6 +88,7 @@ export interface Look {
 export interface ShortcutStatus {
   toggleChase: string | null;
   cycleMood: string | null;
+  dropCrumb: string | null;
 }
 
 export interface AccessibilityStatus {
@@ -118,9 +137,9 @@ export interface DragError {
   message: string;
 }
 
-/** Evento `duck:sign`: o pato mostra uma plaquinha (hoje só o lembrete de água). */
+/** Evento `duck:sign`: o pato mostra uma plaquinha (água, atualização) ou um balão de fala (`speech`). */
 export interface DuckSign {
-  kind: 'water' | 'update';
+  kind: 'water' | 'update' | 'speech';
   text: string;
   /** Quanto tempo a plaquinha fica na tela; 0 = esconder agora. */
   durationMs: number;

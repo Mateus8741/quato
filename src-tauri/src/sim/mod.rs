@@ -101,6 +101,7 @@ fn run(rt: &mut Runtime, rx: Receiver<SimCommand>) {
             Err(_) => {
                 eprintln!("[quato] panic na simulação; soltando o mouse e voltando ao normal");
                 rt.sim.panic_reset();
+                crate::crumb::close(&rt.app);
                 rt.grab_started = None;
                 tempo = IDLE_TICK;
             }
@@ -270,6 +271,9 @@ fn tick(rt: &mut Runtime, dt: f32, now: f64) -> Duration {
     if rt.last_view != Some(out.view) {
         rt.last_view = Some(out.view);
         crate::actions::on_view_changed(&rt.app, out.view);
+    }
+    if let Some(ev) = out.crumb {
+        crate::crumb::handle(&rt.app, ev, &all);
     }
     let wake = gunplay(rt, &out, &all, cursor, unit_scale, now);
     let base = if !out.active {

@@ -61,13 +61,44 @@ pub fn validate_one(field: &str, accel: &str, platform: Platform) -> Result<Shor
     Ok(s)
 }
 
-pub fn validate_set(cfg: &ShortcutsConfig, platform: Platform) -> Result<(Shortcut, Shortcut), ShortcutError> {
-    let t = validate_one("toggleChase", &cfg.toggle_chase, platform)?;
-    let c = validate_one("cycleMood", &cfg.cycle_mood, platform)?;
-    if t.id() == c.id() {
-        return Err(err(Some("cycleMood"), ShortcutErrorKind::Duplicate, "As duas ações não podem usar a mesma combinação."));
+/// Campos dos atalhos, na ordem em que são validados e registrados.
+const FIELDS: [&str; 3] = ["toggleChase", "cycleMood", "dropCrumb"];
+
+fn accel_of<'a>(cfg: &'a ShortcutsConfig, field: &str) -> &'a str {
+    match field {
+        "toggleChase" => &cfg.toggle_chase,
+        "cycleMood" => &cfg.cycle_mood,
+        _ => &cfg.drop_crumb,
     }
-    Ok((t, c))
+}
+
+fn set_active(a: &mut crate::state::ActiveShortcuts, field: &str, sc: Option<Shortcut>) {
+    match field {
+        "toggleChase" => a.toggle = sc,
+        "cycleMood" => a.cycle = sc,
+        _ => a.crumb = sc,
+    }
+}
+
+fn set_status(s: &mut ShortcutStatus, field: &str, msg: String) {
+    let m = Some(msg);
+    match field {
+        "toggleChase" => s.toggle_chase = m,
+        "cycleMood" => s.cycle_mood = m,
+        _ => s.drop_crumb = m,
+    }
+}
+
+pub fn validate_set(cfg: &ShortcutsConfig, platform: Platform) -> Result<[Shortcut; 3], ShortcutError> {
+    let mut list: Vec<Shortcut> = vec![];
+    for field in FIELDS {
+        let sc = validate_one(field, accel_of(cfg, field), platform)?;
+        if list.iter().any(|o| o.id() == sc.id()) {
+            return Err(err(Some(field), ShortcutErrorKind::Duplicate, "As ações não podem usar a mesma combinação."));
+        }
+        list.push(sc);
+    }
+    Ok([list[0].clone(), list[1].clone(), list[2].clone()])
 }
 
 /// Registra os atalhos da config atual. Falhas não derrubam o app: viram `ShortcutStatus`.
@@ -79,32 +110,14 @@ pub fn register_all(app: &AppHandle) {
     let mut status = ShortcutStatus::default();
     let mut active = crate::state::ActiveShortcuts::default();
     let platform = current_platform();
-    for (field, accel) in [("toggleChase", &cfg.toggle_chase), ("cycleMood", &cfg.cycle_mood)] {
+    for field in FIELDS {
+        let accel = accel_of(&cfg, field);
         match validate_one(field, accel, platform) {
             Ok(sc) => match gs.register(sc.clone()) {
-                Ok(()) => {
-                    if field == "toggleChase" {
-                        active.toggle = Some(sc);
-                    } else {
-                        active.cycle = Some(sc);
-                    }
-                }
-                Err(e) => {
-                    let msg = format!("Não consegui registrar {}: {e}. Outro app pode estar usando.", format_accelerator(accel, platform));
-                    if field == "toggleChase" {
-                        status.toggle_chase = Some(msg);
-                    } else {
-                        status.cycle_mood = Some(msg);
-                    }
-                }
+                Ok(()) => set_active(&mut active, field, Some(sc)),
+                Err(e) => set_status(&mut status, field, format!("Não consegui registrar {}: {e}. Outro app pode estar usando.", format_accelerator(accel, platform))),
             },
-            Err(e) => {
-                if field == "toggleChase" {
-                    status.toggle_chase = Some(e.message);
-                } else {
-                    status.cycle_mood = Some(e.message);
-                }
-            }
+            Err(e) => set_status(&mut status, field, e.message),
         }
     }
     *st.active.lock().unwrap() = active;
@@ -114,21 +127,21 @@ pub fn register_all(app: &AppHandle) {
 /// Troca os atalhos sem reiniciar. Se algo falhar, volta ao que estava funcionando.
 pub fn apply(app: &AppHandle, new: &ShortcutsConfig) -> Result<(), ShortcutError> {
     let platform = current_platform();
-    let (t, c) = validate_set(new, platform)?;
+    let news = validate_set(new, platform)?;
     let st = app.state::<AppState>();
     let paused = st.paused.load(Ordering::SeqCst);
     if !paused {
         let gs = app.global_shortcut();
-        let (old_t, old_c) = {
+        let olds: Vec<Shortcut> = {
             let a = st.active.lock().unwrap();
-            (a.toggle.clone(), a.cycle.clone())
+            [a.toggle.clone(), a.cycle.clone(), a.crumb.clone()].into_iter().flatten().collect()
         };
-        for o in [&old_t, &old_c].into_iter().flatten() {
+        for o in &olds {
             let _ = gs.unregister(o.clone());
         }
         let mut done: Vec<Shortcut> = vec![];
         let mut failed: Option<(&str, String)> = None;
-        for (field, sc) in [("toggleChase", &t), ("cycleMood", &c)] {
+        for (field, sc) in FIELDS.iter().zip(news.iter()) {
             match gs.register(sc.clone()) {
                 Ok(()) => done.push(sc.clone()),
                 Err(e) => {
@@ -141,14 +154,15 @@ pub fn apply(app: &AppHandle, new: &ShortcutsConfig) -> Result<(), ShortcutError
             for d in done {
                 let _ = gs.unregister(d);
             }
-            for o in [&old_t, &old_c].into_iter().flatten() {
+            for o in &olds {
                 let _ = gs.register(o.clone());
             }
             return Err(err(Some(field), ShortcutErrorKind::InUse, &format!("Essa combinação não está disponível ({e}). Outro app pode estar usando.")));
         }
         let mut a = st.active.lock().unwrap();
-        a.toggle = Some(t);
-        a.cycle = Some(c);
+        for (field, sc) in FIELDS.iter().zip(news.iter()) {
+            set_active(&mut a, field, Some(sc.clone()));
+        }
         *st.shortcut_status.lock().unwrap() = ShortcutStatus::default();
     }
     {
@@ -182,10 +196,11 @@ pub fn handler(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) {
     if event.state() != ShortcutState::Pressed {
         return;
     }
-    let (is_toggle, is_cycle) = {
+    let (is_toggle, is_cycle, is_crumb) = {
         let st = app.state::<AppState>();
         let a = st.active.lock().unwrap();
-        (a.toggle.as_ref().map(|s| s.id() == shortcut.id()).unwrap_or(false), a.cycle.as_ref().map(|s| s.id() == shortcut.id()).unwrap_or(false))
+        let is = |o: &Option<Shortcut>| o.as_ref().map(|s| s.id() == shortcut.id()).unwrap_or(false);
+        (is(&a.toggle), is(&a.cycle), is(&a.crumb))
     };
     // Este handler roda na main thread: o trabalho (arquivo, menu) vai para outra thread.
     let app = app.clone();
@@ -193,6 +208,8 @@ pub fn handler(app: &AppHandle, shortcut: &Shortcut, event: ShortcutEvent) {
         std::thread::spawn(move || actions::toggle_chase(&app));
     } else if is_cycle {
         std::thread::spawn(move || actions::cycle_mood(&app));
+    } else if is_crumb {
+        std::thread::spawn(move || actions::drop_crumb(&app));
     }
 }
 
@@ -253,7 +270,7 @@ mod tests {
     use super::*;
 
     fn cfg(a: &str, b: &str) -> ShortcutsConfig {
-        ShortcutsConfig { toggle_chase: a.into(), cycle_mood: b.into() }
+        ShortcutsConfig { toggle_chase: a.into(), cycle_mood: b.into(), ..ShortcutsConfig::default() }
     }
 
     #[test]
@@ -289,6 +306,20 @@ mod tests {
         if cfg!(target_os = "macos") {
             assert_eq!(e.unwrap_err().kind, ShortcutErrorKind::Duplicate);
         }
+    }
+
+    #[test]
+    fn crumb_shortcut_has_a_valid_default_and_cannot_clash() {
+        assert_eq!(ShortcutsConfig::default().drop_crumb, "CommandOrControl+Shift+F");
+        let mut c = ShortcutsConfig::default();
+        c.drop_crumb = c.cycle_mood.clone();
+        let e = validate_set(&c, Platform::Macos).unwrap_err();
+        assert_eq!(e.kind, ShortcutErrorKind::Duplicate);
+        assert_eq!(e.field.as_deref(), Some("dropCrumb"));
+        // config antiga, sem o campo novo, ganha o padrão
+        let old: ShortcutsConfig = serde_json::from_str(r#"{"toggleChase":"Alt+P","cycleMood":"Alt+O"}"#).unwrap();
+        assert_eq!(old.toggle_chase, "Alt+P");
+        assert_eq!(old.drop_crumb, "CommandOrControl+Shift+F");
     }
 
     #[test]

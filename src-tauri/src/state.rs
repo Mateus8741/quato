@@ -14,6 +14,7 @@ use tauri_plugin_global_shortcut::Shortcut;
 pub struct ActiveShortcuts {
     pub toggle: Option<Shortcut>,
     pub cycle: Option<Shortcut>,
+    pub crumb: Option<Shortcut>,
 }
 
 pub struct TrayHandles {

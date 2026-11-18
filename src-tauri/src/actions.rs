@@ -138,6 +138,11 @@ pub fn cycle_mood(app: &AppHandle) {
     set_mood(app, next);
 }
 
+/// Atalho da migalha: o pato recebe o pedido e a simulação decide (usa a posição do cursor naquele instante).
+pub fn drop_crumb(app: &AppHandle) {
+    send(app, SimCommand::DropCrumb);
+}
+
 pub fn release_mouse(app: &AppHandle) {
     send(app, SimCommand::ReleaseMouse);
 }

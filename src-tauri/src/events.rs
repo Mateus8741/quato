@@ -25,6 +25,8 @@ pub const WATER_MAX_INTERVAL: u32 = 720;
 pub enum SignKind {
     Water,
     Update,
+    /// Balão de fala aleatória (`speech.rs`).
+    Speech,
 }
 
 /// Evento `duck:sign`: plaquinha na faixa de cima da janela do pato.
@@ -126,10 +128,12 @@ pub struct DuckView {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct ShortcutsConfig {
     pub toggle_chase: String,
     pub cycle_mood: String,
+    /// Joga uma migalha na posição do cursor (`crumb.rs`).
+    pub drop_crumb: String,
 }
 
 impl Default for ShortcutsConfig {
@@ -137,6 +141,7 @@ impl Default for ShortcutsConfig {
         Self {
             toggle_chase: "CommandOrControl+Shift+D".into(),
             cycle_mood: "CommandOrControl+Shift+M".into(),
+            drop_crumb: "CommandOrControl+Shift+F".into(),
         }
     }
 }
@@ -146,6 +151,7 @@ impl Default for ShortcutsConfig {
 pub struct ShortcutStatus {
     pub toggle_chase: Option<String>,
     pub cycle_mood: Option<String>,
+    pub drop_crumb: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -180,6 +186,8 @@ pub struct Config {
     pub focus: crate::reminders::FocusConfig,
     /// Dança quando tem som saindo do computador.
     pub dance_on_music: bool,
+    /// Balão de fala (frequência e frases extras).
+    pub speech: crate::speech::SpeechConfig,
     /// Última versão nova que já avisamos com a plaquinha.
     pub notified_update: Option<String>,
     /// Quando avisamos (segundos Unix); depois de 24 h pode lembrar de novo.
@@ -219,6 +227,7 @@ impl Default for Config {
             reminders: Default::default(),
             focus: Default::default(),
             dance_on_music: true,
+            speech: crate::speech::SpeechConfig::default(),
             notified_update: None,
             notified_at: 0,
             seasonal_accessories: false,

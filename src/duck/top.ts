@@ -13,6 +13,7 @@ const SWAY_MS = 300;
 const BALLOON_MS = 100;
 
 interface SignState {
+  kind: SignKind;
   canvas: HTMLCanvasElement;
   phase: 'in' | 'show' | 'out';
   frame: number;
@@ -42,13 +43,15 @@ export class TopStrip {
 
   /** Evento duck:sign. `durationMs <= 0` esconde na hora. */
   showSign(text: string, durationMs: number, kind: SignKind = 'water'): void {
+    // Balão de fala nunca cobre um lembrete (água, atualização) que ainda está na tela.
+    if (kind === 'speech' && durationMs > 0 && this.sign && this.sign.kind !== 'speech' && this.sign.phase !== 'out') return;
     window.clearTimeout(this.hideTimer);
     if (durationMs <= 0) {
       this.sign = null;
       this.kick();
       return;
     }
-    this.sign = { canvas: toCanvas(renderSign(text, kind)), phase: 'in', frame: 0 };
+    this.sign = { kind, canvas: toCanvas(renderSign(text, kind)), phase: 'in', frame: 0 };
     this.hideTimer = window.setTimeout(() => {
       if (this.sign) this.sign = { ...this.sign, phase: 'out', frame: 0 };
       this.kick();

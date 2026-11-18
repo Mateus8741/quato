@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import type { AccessibilityStatus, DuckView, Look, Mood, SettingsView, ShortcutField, ShortcutsConfig, UpdateCheckResult } from './types.ts';
+import type { AccessibilityStatus, DuckView, Look, Mood, SettingsView, ShortcutField, ShortcutsConfig, SpeechFrequency, UpdateCheckResult } from './types.ts';
 
 export const EV = {
   duckView: 'duck:view',
@@ -13,6 +13,8 @@ export const EV = {
   fxShot: 'fx:shot',
   fxClear: 'fx:clear',
   fxReady: 'fx:ready',
+  crumbShow: 'crumb:show',
+  crumbEat: 'crumb:eat',
 } as const;
 
 export const api = {
@@ -31,6 +33,8 @@ export const api = {
   setDanceOnMusic: (enabled: boolean) => invoke<void>('set_dance_on_music', { enabled }),
   setDnd: (enabled: boolean) => invoke<void>('set_dnd', { enabled }),
   setLaunchAtLogin: (enabled: boolean) => invoke<boolean>('set_launch_at_login', { enabled }),
+  setSpeech: (frequency: SpeechFrequency, extra: string[]) => invoke<SettingsView>('set_speech', { frequency, extra }),
+  speechTest: () => invoke<void>('speech_test'),
   checkUpdate: () => invoke<UpdateCheckResult>('check_update'),
   openUpdate: () => invoke<void>('open_update'),
   setMood: (mood: Mood) => invoke<void>('set_mood', { mood }),

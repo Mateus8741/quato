@@ -197,6 +197,7 @@ pub fn current(app: &AppHandle) -> Option<UpdateInfo> {
 }
 
 fn sign(app: &AppHandle, text: String) {
+    crate::speech::note_sign(SIGN_MS);
     let _ = app.emit(EV_DUCK_SIGN, DuckSign { kind: SignKind::Update, text, duration_ms: SIGN_MS });
 }
 

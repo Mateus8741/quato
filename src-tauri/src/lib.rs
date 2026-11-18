@@ -5,6 +5,7 @@ pub mod autostart;
 pub mod commands;
 pub mod config;
 pub mod dnd;
+pub mod crumb;
 pub mod events;
 pub mod fire;
 pub mod fx;
@@ -16,6 +17,7 @@ pub mod reminders;
 pub mod pointer;
 pub mod shortcuts;
 pub mod sim;
+pub mod speech;
 pub mod state;
 pub mod tray;
 pub mod update;
@@ -60,6 +62,8 @@ pub fn run() {
             commands::focus_toggle,
             commands::set_dance_on_music,
             commands::set_seasonal_accessories,
+            commands::set_speech,
+            commands::speech_test,
             commands::check_update,
             commands::open_update,
             commands::set_dnd,
@@ -83,6 +87,7 @@ pub fn run() {
             hold::spawn(handle.clone());
             water::spawn(handle.clone());
             reminders::spawn(handle.clone());
+            speech::spawn(handle.clone());
             audio::spawn(handle.clone());
             update::spawn(handle.clone());
             {

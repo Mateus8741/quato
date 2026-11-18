@@ -163,6 +163,19 @@ pub async fn set_dance_on_music(app: AppHandle, enabled: bool) {
     actions::set_dance_on_music(&app, enabled);
 }
 
+/// Frequência do balão de fala e frases extras (arrumadas no Rust).
+#[tauri::command]
+pub async fn set_speech(app: AppHandle, frequency: crate::speech::SpeechFrequency, extra: Vec<String>) -> SettingsView {
+    crate::speech::set(&app, frequency, &extra);
+    actions::settings_view(&app)
+}
+
+/// "Testar fala": mostra um balão agora.
+#[tauri::command]
+pub async fn speech_test(app: AppHandle) {
+    crate::speech::say_now(&app);
+}
+
 /// Procura atualização agora (mostra a plaquinha com o resultado) e devolve o resultado.
 #[tauri::command]
 pub async fn check_update(app: AppHandle) -> crate::update::CheckResult {

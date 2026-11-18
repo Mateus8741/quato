@@ -72,7 +72,7 @@ const UPDATE = [
   'yyyyyyy',
 ];
 const UPDATE_PAL = { g: '#1f7a3a', L: '#7be08f', y: '#ffd23f' };
-export type SignKind = 'water' | 'update';
+export type SignKind = 'water' | 'update' | 'speech';
 
 const WOOD = { line: '#4a2a12', board: '#d9a066', light: '#f0c48c', grain: '#bf844c', nail: '#6b4423', post: '#a8693a', ink: '#4a2a12' };
 
@@ -99,6 +99,7 @@ export function signLayout(text: string): SignLayout {
 
 /** Plaquinha de madeira com gotinha azul e o texto (até 2 linhas), num pauzinho que desce até o pato. */
 export function renderSign(text: string, kind: SignKind = 'water'): Pix {
+  if (kind === 'speech') return renderSpeech(text);
   const p = newPix();
   const L = signLayout(text);
   const icon = kind === 'update' ? UPDATE : DROP;
@@ -128,6 +129,39 @@ export function renderSign(text: string, kind: SignKind = 'water'): Pix {
   L.lines.forEach((line, i) => {
     const tx = tx0 + Math.floor((areaW - textWidth(line)) / 2);
     drawText(line, tx, textTop + i * LINE_H, (x, y) => plot(p, x, y, WOOD.ink));
+  });
+  return p;
+}
+
+const SPEECH_INK = '#2a1a10';
+/** Largura máxima do texto do balão de fala (pixels de arte). */
+export const SPEECH_TEXT_W = 80;
+
+/** Balão de fala parado (sem tremedeira), até 2 linhas, com o rabinho para baixo, em cima do pato. */
+export function renderSpeech(text: string): Pix {
+  const p = newPix();
+  const lines = wrapBalanced(text, SPEECH_TEXT_W, 2);
+  const tw = Math.max(...lines.map(textWidth), 1);
+  const w = tw + 8;
+  const h = lines.length * LINE_H - 1 - 2 + 6;
+  const x = Math.round((TOP_W - w) / 2);
+  const y = 1;
+  const tx = TOP_W / 2;
+  const tailRows = Math.min(7, TOP_H - (y + h));
+  for (let j = 0; j < tailRows; j++) {
+    const half = Math.max(0, 3 - Math.floor(j / 2));
+    const ty = y + h - 1 + j;
+    if (half === 0 || j === tailRows - 1) { plot(p, tx, ty, BALLOON.line); continue; }
+    fill(p, tx - half, ty, half * 2 + 1, 1, BALLOON.fill);
+    plot(p, tx - half - 1, ty, BALLOON.line);
+    plot(p, tx + half + 1, ty, BALLOON.line);
+  }
+  roundBox(p, x, y, w, h, BALLOON.fill, BALLOON.line);
+  fill(p, tx - 2, y + h - 1, 5, 1, BALLOON.fill);
+  const textTop = y + 3 - 2;
+  lines.forEach((line, i) => {
+    const lx = x + Math.floor((w - textWidth(line)) / 2);
+    drawText(line, lx, textTop + i * LINE_H, (px, py) => plot(p, px, py, SPEECH_INK));
   });
   return p;
 }
