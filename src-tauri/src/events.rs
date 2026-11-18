@@ -25,6 +25,10 @@ pub const WATER_MAX_INTERVAL: u32 = 720;
 pub enum SignKind {
     Water,
     Update,
+    /// Lembretes de postura, alongar e descansar a vista (`reminders.rs`), cada um com seu ícone.
+    Posture,
+    Stretch,
+    Eyes,
     /// Balão de fala aleatória (`speech.rs`).
     Speech,
 }
@@ -84,6 +88,8 @@ pub enum DuckMode {
     Held,
     /// Dançando (humor Dançando ou música tocando). Preenchido pelo motor.
     Dance,
+    /// Comendo a migalha (bicadas com a cabeça descendo).
+    Eat,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

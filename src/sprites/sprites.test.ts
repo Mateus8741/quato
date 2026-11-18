@@ -127,6 +127,14 @@ describe('v2: dança, lagartinho, pena do meio', () => {
     expect(SKINS.lagarto.effect).toBe('drip');
   });
 
+  it('comer tem >= 3 quadros diferentes e a cabeça desce (pato e lagartinho)', () => {
+    for (const set of Object.values(ALL_SETS)) {
+      expect(set.eat.length).toBeGreaterThanOrEqual(3);
+      expect(new Set(set.eat.map((f) => f.grid.join(''))).size).toBe(set.eat.length);
+      expect(Math.max(...set.eat.map((f) => f.eye.y))).toBeGreaterThan(set.idle[0]!.eye.y + 3);
+    }
+  });
+
   it('os quadros da dança são diferentes entre si (anima de verdade)', () => {
     expect(new Set(ANIMS.dance.map((f) => f.grid.join(''))).size).toBeGreaterThanOrEqual(3);
   });

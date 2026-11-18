@@ -205,7 +205,7 @@ impl Sim {
                 Mode::Sleep => DuckMode::Sleep,
                 Mode::Held => DuckMode::Held,
                 Mode::Dance => DuckMode::Dance,
-                Mode::Crumb if self.crumb.is_some_and(|c| c.eating_until.is_some()) => DuckMode::Idle,
+                Mode::Crumb if self.crumb.is_some_and(|c| c.eating_until.is_some()) => DuckMode::Eat,
                 Mode::Crumb => DuckMode::Walk,
             },
             mood: self.mood,
@@ -1095,7 +1095,7 @@ mod tests {
     }
 
     #[test]
-    fn crumb_shows_walk_then_idle_while_eating() {
+    fn crumb_shows_walk_then_eat_while_eating() {
         let (mut sim, now) = calm_sim(Mood::Feliz);
         sim.apply(SimCommand::DropCrumb, now);
         let target = Vec2::new(900.0, 300.0);
@@ -1107,12 +1107,14 @@ mod tests {
         while t < now + 10.0 {
             let o = sim.step(&input(target, t, true));
             if matches!(o.crumb, Some(CrumbEvent::Eaten(_))) {
-                assert_eq!(o.view.mode, DuckMode::Idle);
+                assert_eq!(o.view.mode, DuckMode::Eat);
                 saw_eating_idle = true;
             }
             t += DT as f64;
         }
         assert!(saw_eating_idle);
+        let after = sim.step(&input(target, t + 2.0, true));
+        assert_ne!(after.view.mode, DuckMode::Eat, "depois de comer volta ao normal");
     }
 
     #[test]

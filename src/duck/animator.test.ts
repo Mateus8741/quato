@@ -14,6 +14,10 @@ describe('animFor', () => {
     expect(animFor(view({ mode: 'dance' }))).toBe('dance');
     expect(animFor(view({ mode: 'dance', mood: 'lagarto' }))).toBe('dance');
   });
+  it('comendo a migalha usa a animação própria', () => {
+    expect(animFor(view({ mode: 'eat' }))).toBe('eat');
+    expect(animFor(view({ mode: 'eat', mood: 'lagarto' }))).toBe('eat');
+  });
   it('segurado pela pessoa usa a animação de bico aberto', () => {
     expect(animFor(view({ mode: 'held' }))).toBe('grab');
   });

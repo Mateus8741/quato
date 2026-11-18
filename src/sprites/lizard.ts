@@ -109,6 +109,12 @@ function anims(scream: boolean): Readonly<Record<AnimName, readonly Frame[]>> {
       lizard({ mouth: 'smile', headDx: -1, headDy: 2, arm: -2, tuck: true }),
       lizard({ mouth: 'smile', headDx: -1, headDy: 3, arm: -2, tuck: true }),
     ],
+    // comendo: cabeção desce e abocanha o chão, o braço junto
+    eat: [
+      lizard({ mouth: m('open'), headDx: 1, headDy: 2, arm: 1 }),
+      lizard({ mouth: m('smile'), headDx: 2, headDy: 5, arm: 0 }),
+      lizard({ mouth: m('open'), headDx: 1, headDy: 3, arm: 1 }),
+    ],
     dance: [
       lizard({ mouth: m('smile'), headDx: -1, arm: 2, legBack: 1, tail: 0 }),
       lizard({ mouth: m('open'), headDy: 1, bob: -1, arm: 0, legBack: 2, legFront: 2, tail: 2 }),
