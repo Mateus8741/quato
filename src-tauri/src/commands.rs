@@ -134,6 +134,18 @@ pub async fn check_update(app: AppHandle) -> crate::update::CheckResult {
         .unwrap_or(crate::update::CheckResult { status: crate::update::CheckStatus::Error, update: None })
 }
 
+/// Modo "não perturbe" (esconder o pato com app em tela cheia).
+#[tauri::command]
+pub async fn set_dnd(app: AppHandle, enabled: bool) {
+    actions::set_dnd(&app, enabled);
+}
+
+/// Abrir ao ligar o computador; devolve o estado real depois de tentar.
+#[tauri::command]
+pub async fn set_launch_at_login(app: AppHandle, enabled: bool) -> bool {
+    crate::autostart::set(&app, enabled)
+}
+
 /// Abre a página de download da versão nova no navegador.
 #[tauri::command]
 pub async fn open_update(app: AppHandle) {

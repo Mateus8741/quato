@@ -39,6 +39,10 @@ export interface Config {
   /** Última versão nova já avisada com a plaquinha. */
   notifiedUpdate?: string | null;
   notifiedAt?: number;
+  /** Modo "não perturbe": esconde o pato com app em tela cheia no monitor dele. */
+  dnd: boolean;
+  /** Abrir ao ligar o computador. */
+  launchAtLogin: boolean;
 }
 
 export interface WaterConfig {

@@ -129,6 +129,11 @@ function render(): void {
       <label class="check"><input type="checkbox" data-dance-music ${v.config.danceOnMusic ? 'checked' : ''} /> Dançar quando tiver som tocando</label>
       <p class="note">Ele percebe quando tem <b>som saindo do computador</b>, seja música, vídeo, chamada ou um aviso, e dança enquanto durar (para uns segundos depois que o som acaba). Não ouve nem grava nada: só pergunta ao sistema se a saída de som está tocando. ${platform === 'macos' ? 'No Mac, alguns apps deixam o som “aberto” mesmo em silêncio; aí ele pode dançar sem música.' : ''}</p>
       <p class="note">Perseguindo o cursor, carregado ou dormindo, ele não dança. O humor “Dançando” faz ele dançar o tempo todo.</p></section>
+    <section><h2>Sistema</h2>
+      <label class="check"><input type="checkbox" data-launch-login ${v.config.launchAtLogin ? 'checked' : ''} /> Abrir ao ligar o computador</label>
+      <p class="note">O Quato abre sozinho quando você entra no ${platform === 'macos' ? 'Mac' : 'Windows'}. Começa desligado.</p>
+      <label class="check"><input type="checkbox" data-dnd ${v.config.dnd ? 'checked' : ''} /> Não perturbe: esconder o pato com app em tela cheia</label>
+      <p class="note">Quando um app (filme, jogo, apresentação) ocupa a tela inteira${platform === 'macos' ? ' do monitor dele' : ''}, o pato e os efeitos somem e ele para de perseguir e de mexer no mouse. Ele volta sozinho quando a tela cheia acaba. Não pede nenhuma permissão.</p></section>
     <section><h2>Atalhos</h2>${shortcutHtml}
       <p class="note">Se o atalho não responder, outro app pode estar usando a mesma combinação.</p>
       <button data-reset>Restaurar padrões</button></section>
@@ -273,6 +278,14 @@ app.addEventListener('change', async (e) => {
   }
   if (t.matches('[data-water-min]')) {
     await applyWaterInterval(t);
+    return;
+  }
+  if (t.matches('[data-launch-login]')) {
+    t.checked = await api.setLaunchAtLogin(t.checked);
+    return;
+  }
+  if (t.matches('[data-dnd]')) {
+    await api.setDnd(t.checked);
     return;
   }
   if (t.matches('[data-dance-music]')) {

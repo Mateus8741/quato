@@ -129,4 +129,14 @@ mod tests {
         assert_eq!(c.mood, Mood::Feliz);
         assert!(d.join("config.json.bak").exists());
     }
+
+    #[test]
+    fn dnd_defaults_on_and_autostart_off() {
+        let c = parse(r#"{"mood":"raiva"}"#).unwrap();
+        assert!(c.dnd);
+        assert!(!c.launch_at_login);
+        let c = parse(r#"{"dnd":false,"launchAtLogin":true}"#).unwrap();
+        assert!(!c.dnd && c.launch_at_login);
+        assert!(serialize(&c).contains("\"launchAtLogin\": true"));
+    }
 }

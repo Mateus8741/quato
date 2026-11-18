@@ -180,6 +180,10 @@ pub struct Config {
     pub notified_update: Option<String>,
     /// Quando avisamos (segundos Unix); depois de 24 h pode lembrar de novo.
     pub notified_at: u64,
+    /// Modo "não perturbe": esconde o pato quando há app em tela cheia no monitor dele.
+    pub dnd: bool,
+    /// Abrir ao ligar o computador (espelha o estado real do sistema).
+    pub launch_at_login: bool,
 }
 
 /// Aparência do pato: o que a janela do pato precisa saber além do `DuckView`.
@@ -206,6 +210,8 @@ impl Default for Config {
             dance_on_music: true,
             notified_update: None,
             notified_at: 0,
+            dnd: true,
+            launch_at_login: false,
         }
     }
 }

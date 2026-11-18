@@ -113,6 +113,16 @@ pub fn set_dance_on_music(app: &AppHandle, on: bool) {
     emit_settings(app);
 }
 
+pub fn set_dnd(app: &AppHandle, on: bool) {
+    {
+        let st = app.state::<AppState>();
+        let mut cfg = st.config.lock().unwrap();
+        cfg.dnd = on;
+        crate::config::save(app, &cfg);
+    }
+    emit_settings(app);
+}
+
 pub fn cycle_mood(app: &AppHandle) {
     let next = app.state::<AppState>().config.lock().unwrap().mood.next();
     set_mood(app, next);
