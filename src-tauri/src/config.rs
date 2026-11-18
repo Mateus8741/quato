@@ -10,6 +10,7 @@ pub fn sanitize(mut cfg: Config) -> Config {
     cfg.color = crate::look::sanitize_color(&cfg.color);
     cfg.accessories = crate::look::sanitize_accessories(&cfg.accessories);
     cfg.water.interval_min = crate::events::clamp_water_interval(cfg.water.interval_min);
+    cfg.speech.extra = crate::speech::sanitize_extra(&cfg.speech.extra);
     cfg
 }
 

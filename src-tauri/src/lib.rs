@@ -3,6 +3,7 @@ pub mod actions;
 pub mod audio;
 pub mod commands;
 pub mod config;
+pub mod crumb;
 pub mod events;
 pub mod fire;
 pub mod fx;
@@ -13,6 +14,7 @@ pub mod platform_input;
 pub mod pointer;
 pub mod shortcuts;
 pub mod sim;
+pub mod speech;
 pub mod state;
 pub mod tray;
 pub mod update;
@@ -50,6 +52,8 @@ pub fn run() {
             commands::water_drank,
             commands::water_test,
             commands::set_dance_on_music,
+            commands::set_speech,
+            commands::speech_test,
             commands::check_update,
             commands::open_update,
         ])
@@ -69,6 +73,7 @@ pub fn run() {
             sim::spawn(handle.clone(), rx, mood);
             hold::spawn(handle.clone());
             water::spawn(handle.clone());
+            speech::spawn(handle.clone());
             audio::spawn(handle.clone());
             update::spawn(handle.clone());
             {

@@ -11,6 +11,9 @@ const FIGHT_DIST: f32 = 40.0;
 const FIGHT_TICKS: u32 = 3;
 const GRAB_ENTER_DIST: f32 = 12.0;
 const MOVE_EPS: f32 = 5.0;
+/// Migalha: quanto tempo ele "come" parado, e quanto tempo desiste se não chegar nela.
+pub const CRUMB_EAT_SECS: f64 = 0.9;
+pub const CRUMB_TIMEOUT: f64 = 20.0;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ReleaseReason {
@@ -30,6 +33,26 @@ enum Mode {
     Held,
     /// Dançando no lugar (humor Dançando, ou som tocando com "dançar com som" ligado).
     Dance,
+    /// Indo até uma migalha (ou comendo ela, parado).
+    Crumb,
+}
+
+/// O que a simulação conta para quem desenha a migalha (`crumb.rs`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum CrumbEvent {
+    /// Caiu uma migalha nessa posição.
+    Dropped(Vec2),
+    /// O pato chegou e começou a comer.
+    Eaten(Vec2),
+    /// A migalha sumiu sem ser comida (desistiu, humor mudou, pegaram o pato).
+    Gone,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Crumb {
+    pos: Vec2,
+    since: f64,
+    eating_until: Option<f64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -51,6 +74,8 @@ pub enum SimCommand {
     SetMusic(bool),
     /// Preferência "Dançar quando tiver som tocando".
     SetDanceOnMusic(bool),
+    /// Atalho da migalha: joga uma na posição do cursor (só visual; ignorado dormindo).
+    DropCrumb,
 }
 
 pub struct SimInput {
@@ -73,6 +98,8 @@ pub struct SimOutput {
     /// Perseguindo, mas já colado no cursor e sem se mexer: pode checar mais devagar.
     pub settled: bool,
     pub released: Option<ReleaseReason>,
+    /// Migalha: caiu, foi comida ou sumiu (no máximo um por passo).
+    pub crumb: Option<CrumbEvent>,
 }
 
 pub struct Sim {
@@ -102,6 +129,9 @@ pub struct Sim {
     dance_on_music: bool,
     /// Atirando no cursor (arminha + raiva): fica sempre virado para ele.
     aiming: bool,
+    crumb: Option<Crumb>,
+    crumb_request: bool,
+    crumb_event: Option<CrumbEvent>,
     initialized: bool,
     rng: fastrand::Rng,
 }
@@ -134,6 +164,9 @@ impl Sim {
             music: false,
             dance_on_music: true,
             aiming: false,
+            crumb: None,
+            crumb_request: false,
+            crumb_event: None,
             initialized: false,
             rng: fastrand::Rng::with_seed(seed),
         }
@@ -167,6 +200,8 @@ impl Sim {
                 Mode::Sleep => DuckMode::Sleep,
                 Mode::Held => DuckMode::Held,
                 Mode::Dance => DuckMode::Dance,
+                Mode::Crumb if self.crumb.is_some_and(|c| c.eating_until.is_some()) => DuckMode::Idle,
+                Mode::Crumb => DuckMode::Walk,
             },
             mood: self.mood,
             facing: self.facing,
@@ -183,6 +218,38 @@ impl Sim {
         self.drag_enabled = false;
         self.vel = Vec2::ZERO;
         self.last_set = None;
+        self.crumb = None;
+        self.crumb_request = false;
+    }
+
+    /// A migalha acabou (comida, desistência ou cancelada): volta ao que fazia.
+    fn finish_crumb(&mut self, now: f64) {
+        self.crumb = None;
+        if self.mode == Mode::Crumb {
+            self.mode = if self.chasing { Mode::Chase } else { Mode::Idle };
+            self.last_move_at = now;
+            self.schedule_wander(now);
+        }
+    }
+
+    /// Cancela a migalha (se houver) avisando que ela sumiu.
+    fn cancel_crumb(&mut self, now: f64) {
+        if self.crumb.is_some() {
+            self.crumb_event = Some(CrumbEvent::Gone);
+            self.finish_crumb(now);
+        }
+    }
+
+    /// Pedido de migalha: só vale se ele não estiver dormindo de sono, no colo nem arrastando o mouse.
+    fn try_drop_crumb(&mut self, cursor: Vec2, now: f64) {
+        let eating = self.crumb.is_some_and(|c| c.eating_until.is_some());
+        if self.mood == Mood::Sono || matches!(self.mode, Mode::Held | Mode::Grab) || eating {
+            return;
+        }
+        self.crumb = Some(Crumb { pos: cursor, since: now, eating_until: None });
+        self.mode = Mode::Crumb;
+        self.last_move_at = now;
+        self.crumb_event = Some(CrumbEvent::Dropped(cursor));
     }
 
     fn release_grab(&mut self, reason: ReleaseReason, now: f64, cooldown: f64) {
@@ -207,7 +274,12 @@ impl Sim {
                 }
                 self.last_move_at = now;
             }
-            SimCommand::SetMood(m) => self.mood = m,
+            SimCommand::SetMood(m) => {
+                self.mood = m;
+                if m == Mood::Sono {
+                    self.cancel_crumb(now);
+                }
+            }
             SimCommand::SetDragEnabled(on) => {
                 self.drag_enabled = on;
                 if !on && self.mode == Mode::Grab {
@@ -226,6 +298,7 @@ impl Sim {
                 }
             }
             SimCommand::Shutdown => {
+                self.cancel_crumb(now);
                 if self.mode == Mode::Grab {
                     self.release_grab(ReleaseReason::Command, now, RELEASE_COOLDOWN);
                 }
@@ -239,6 +312,7 @@ impl Sim {
                 self.replan_wander(now);
             }
             SimCommand::UserGrab(cursor) => {
+                self.cancel_crumb(now);
                 if self.mode == Mode::Grab {
                     self.release_grab(ReleaseReason::Command, now, RELEASE_COOLDOWN);
                 }
@@ -259,6 +333,7 @@ impl Sim {
             }
             SimCommand::SetMusic(on) => self.music = on,
             SimCommand::SetDanceOnMusic(on) => self.dance_on_music = on,
+            SimCommand::DropCrumb => self.crumb_request = true,
         }
     }
 
@@ -322,6 +397,10 @@ impl Sim {
         if moved && self.mode != Mode::Grab {
             self.last_cursor = i.cursor;
             self.last_move_at = now;
+        }
+
+        if std::mem::take(&mut self.crumb_request) {
+            self.try_drop_crumb(i.cursor, now);
         }
 
         // Transições por flag de perseguição (perseguir tem prioridade sobre dançar).
@@ -446,6 +525,38 @@ impl Sim {
                 self.vel = Vec2::ZERO;
                 self.last_move_at = now;
             }
+            Mode::Crumb => match self.crumb {
+                None => self.finish_crumb(now),
+                Some(mut c) => {
+                    let dir = if c.pos.x >= self.pos.x { 1.0 } else { -1.0 };
+                    self.last_move_at = now;
+                    if let Some(until) = c.eating_until {
+                        self.vel = Vec2::ZERO;
+                        self.facing = if dir > 0.0 { Facing::Right } else { Facing::Left };
+                        if now >= until {
+                            self.finish_crumb(now);
+                        }
+                    } else if now - c.since > CRUMB_TIMEOUT {
+                        self.cancel_crumb(now);
+                    } else {
+                        // O bico (não os pés) vai até a migalha; o alvo respeita os limites da tela.
+                        let goal = i.bounds.clamp(Vec2::new(c.pos.x - BEAK.x * dir * s, c.pos.y - BEAK.y * s));
+                        let d = goal - self.pos;
+                        if d.len() < 4.0 * s {
+                            self.vel = Vec2::ZERO;
+                            c.eating_until = Some(now + CRUMB_EAT_SECS);
+                            self.crumb = Some(c);
+                            self.crumb_event = Some(CrumbEvent::Eaten(c.pos));
+                            self.facing = if dir > 0.0 { Facing::Right } else { Facing::Left };
+                        } else {
+                            let speed = prof.speed.clamp(160.0, 450.0);
+                            self.vel = Self::approach(self.vel, d.norm() * speed * s, 2500.0 * s * i.dt);
+                            let step = self.vel * i.dt;
+                            self.pos = if step.len() >= d.len() { goal } else { self.pos + step };
+                        }
+                    }
+                }
+            },
         }
 
         self.pos = i.bounds.clamp(self.pos);
@@ -476,11 +587,12 @@ impl Sim {
             pos: self.pos,
             warp_cursor: warp,
             view: self.view(),
-            active: matches!(self.mode, Mode::Wander | Mode::Chase | Mode::Grab | Mode::Held | Mode::Dance),
+            active: matches!(self.mode, Mode::Wander | Mode::Chase | Mode::Grab | Mode::Held | Mode::Dance | Mode::Crumb),
             new_home: self.pending_new_home.take(),
             // Dançando ele não sai do lugar: não precisa de 60 Hz.
-            settled: (self.mode == Mode::Chase && self.vel.len() < 1.0) || self.mode == Mode::Dance,
+            settled: (self.mode == Mode::Chase && self.vel.len() < 1.0) || self.mode == Mode::Dance || (self.mode == Mode::Crumb && self.vel.len() < 1.0),
             released: self.pending_release.take(),
+            crumb: self.crumb_event.take(),
         }
     }
 }
@@ -901,5 +1013,148 @@ mod tests {
         sim.apply(SimCommand::SetHome(Some(Vec2::new(300.0, 400.0))), 0.0);
         let out = sim.step(&input(Vec2::new(10.0, 10.0), 0.0, true));
         assert!(out.pos.dist(Vec2::new(300.0, 400.0)) < 1.0, "nasceu em {:?}", out.pos);
+    }
+
+    // ---- migalha ----
+
+    /// Roda até `secs` segundos coletando os eventos de migalha; devolve (agora, eventos, algum warp?).
+    fn run_crumb(sim: &mut Sim, start: f64, secs: f64, cursor: Vec2) -> (f64, Vec<CrumbEvent>, bool) {
+        let mut now = start;
+        let mut events = vec![];
+        let mut warped = false;
+        while now < start + secs {
+            let out = sim.step(&input(cursor, now, true));
+            warped |= out.warp_cursor.is_some();
+            if let Some(e) = out.crumb {
+                events.push(e);
+            }
+            now += DT as f64;
+        }
+        (now, events, warped)
+    }
+
+    fn calm_sim(mood: Mood) -> (Sim, f64) {
+        let mut sim = Sim::new(mood, 3);
+        let (now, _, _) = run(&mut sim, 0.0, 1.0, Vec2::new(200.0, 200.0), false, true);
+        (sim, now)
+    }
+
+    #[test]
+    fn crumb_is_walked_to_eaten_and_the_duck_goes_back_to_idle() {
+        let (mut sim, now) = calm_sim(Mood::Feliz);
+        let target = Vec2::new(300.0, 400.0);
+        sim.apply(SimCommand::DropCrumb, now);
+        let (end, events, warped) = run_crumb(&mut sim, now, 12.0, target);
+        assert!(!warped, "migalha nunca mexe no mouse");
+        assert_eq!(events.first(), Some(&CrumbEvent::Dropped(target)));
+        assert_eq!(events.get(1), Some(&CrumbEvent::Eaten(target)));
+        assert_eq!(events.len(), 2, "{events:?}");
+        // o bico ficou na migalha (pés abaixo dela, como na perseguição)
+        let beak = sim.pos() + Vec2::new(BEAK.x * if sim.view().facing == Facing::Right { 1.0 } else { -1.0 }, BEAK.y);
+        assert!(beak.dist(target) < 8.0, "bico em {beak:?}");
+        // depois de comer volta a ficar parado/passeando e a migalha acabou
+        assert!(matches!(sim.view().mode, DuckMode::Idle | DuckMode::Walk));
+        assert!(end > now);
+        assert!(sim.crumb.is_none());
+    }
+
+    #[test]
+    fn crumb_shows_walk_then_idle_while_eating() {
+        let (mut sim, now) = calm_sim(Mood::Feliz);
+        sim.apply(SimCommand::DropCrumb, now);
+        let target = Vec2::new(900.0, 300.0);
+        let out = sim.step(&input(target, now, true));
+        assert_eq!(out.view.mode, DuckMode::Walk);
+        assert!(out.active);
+        let mut t = now + 0.02;
+        let mut saw_eating_idle = false;
+        while t < now + 10.0 {
+            let o = sim.step(&input(target, t, true));
+            if matches!(o.crumb, Some(CrumbEvent::Eaten(_))) {
+                assert_eq!(o.view.mode, DuckMode::Idle);
+                saw_eating_idle = true;
+            }
+            t += DT as f64;
+        }
+        assert!(saw_eating_idle);
+    }
+
+    #[test]
+    fn sleepy_mood_ignores_the_crumb() {
+        let (mut sim, now) = calm_sim(Mood::Sono);
+        let before = sim.pos();
+        sim.apply(SimCommand::DropCrumb, now);
+        let (_, events, _) = run_crumb(&mut sim, now, 3.0, Vec2::new(900.0, 300.0));
+        assert!(events.is_empty(), "{events:?}");
+        assert!(sim.crumb.is_none());
+        assert!(sim.pos().dist(before) < 1.0, "não saiu do lugar");
+    }
+
+    #[test]
+    fn becoming_sleepy_drops_the_crumb() {
+        let (mut sim, now) = calm_sim(Mood::Feliz);
+        sim.apply(SimCommand::DropCrumb, now);
+        let out = sim.step(&input(Vec2::new(900.0, 300.0), now, true));
+        assert!(matches!(out.crumb, Some(CrumbEvent::Dropped(_))));
+        sim.apply(SimCommand::SetMood(Mood::Sono), now + 0.1);
+        let out = sim.step(&input(Vec2::new(900.0, 300.0), now + 0.1, true));
+        assert_eq!(out.crumb, Some(CrumbEvent::Gone));
+        assert!(sim.crumb.is_none());
+        assert_ne!(sim.view().mode, DuckMode::Walk);
+    }
+
+    #[test]
+    fn crumb_resumes_chasing_afterwards() {
+        let (mut sim, now) = calm_sim(Mood::Feliz);
+        sim.apply(SimCommand::SetChasing(true), now);
+        sim.apply(SimCommand::DropCrumb, now);
+        let target = Vec2::new(700.0, 500.0);
+        let (end, events, _) = run_crumb(&mut sim, now, 8.0, target);
+        assert!(events.contains(&CrumbEvent::Eaten(target)));
+        assert_eq!(sim.view().mode, DuckMode::Chase);
+        assert!(end > now);
+    }
+
+    #[test]
+    fn crumb_is_ignored_while_held_or_grabbing_and_cancelled_by_a_grab() {
+        let (mut sim, now) = calm_sim(Mood::Feliz);
+        sim.apply(SimCommand::UserGrab(Vec2::new(210.0, 210.0)), now);
+        sim.apply(SimCommand::DropCrumb, now);
+        let (_, events, _) = run_crumb(&mut sim, now, 0.5, Vec2::new(300.0, 300.0));
+        assert!(events.is_empty());
+        assert_eq!(sim.view().mode, DuckMode::Held);
+        // pegar o pato no meio do caminho cancela a migalha
+        sim.apply(SimCommand::UserDrop, now + 1.0);
+        sim.apply(SimCommand::DropCrumb, now + 1.0);
+        sim.step(&input(Vec2::new(900.0, 300.0), now + 1.0, true));
+        sim.apply(SimCommand::UserGrab(Vec2::new(900.0, 300.0)), now + 1.1);
+        let out = sim.step(&input(Vec2::new(900.0, 300.0), now + 1.1, true));
+        assert_eq!(out.crumb, Some(CrumbEvent::Gone));
+        assert_eq!(sim.view().mode, DuckMode::Held);
+    }
+
+    #[test]
+    fn crumb_gives_up_after_the_timeout() {
+        let (mut sim, now) = calm_sim(Mood::Feliz);
+        sim.apply(SimCommand::DropCrumb, now);
+        sim.step(&input(Vec2::new(900.0, 300.0), now, true));
+        let out = sim.step(&input(Vec2::new(900.0, 300.0), now + CRUMB_TIMEOUT + 1.0, true));
+        assert_eq!(out.crumb, Some(CrumbEvent::Gone));
+        assert!(sim.crumb.is_none());
+        assert_ne!(sim.view().mode, DuckMode::Walk);
+    }
+
+    #[test]
+    fn a_new_crumb_replaces_the_old_one() {
+        let (mut sim, now) = calm_sim(Mood::Feliz);
+        sim.apply(SimCommand::DropCrumb, now);
+        sim.step(&input(Vec2::new(500.0, 300.0), now, true));
+        sim.apply(SimCommand::DropCrumb, now + 0.1);
+        let out = sim.step(&input(Vec2::new(800.0, 300.0), now + 0.1, true));
+        assert_eq!(out.crumb, Some(CrumbEvent::Dropped(Vec2::new(800.0, 300.0))));
+        // come: durante a comida um pedido novo é ignorado
+        let (t, events, _) = run_crumb(&mut sim, now + 0.2, 10.0, Vec2::new(800.0, 300.0));
+        assert!(events.iter().any(|e| matches!(e, CrumbEvent::Eaten(_))));
+        let _ = t;
     }
 }

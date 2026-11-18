@@ -14,6 +14,7 @@ export default defineConfig({
         duck: resolve(root, 'index.html'),
         settings: resolve(root, 'settings.html'),
         fx: resolve(root, 'fx.html'),
+        crumb: resolve(root, 'crumb.html'),
       },
     },
   },

@@ -56,6 +56,7 @@ pub fn clock() -> f64 {
 }
 
 fn sign(app: &AppHandle, duration_ms: u32) {
+    crate::speech::note_sign(duration_ms);
     let _ = app.emit(EV_DUCK_SIGN, DuckSign { kind: SignKind::Water, text: WATER_TEXT.into(), duration_ms });
 }
 
