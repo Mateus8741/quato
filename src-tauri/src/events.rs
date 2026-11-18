@@ -184,6 +184,8 @@ pub struct Config {
     pub reminders: crate::reminders::RemindersConfig,
     /// Durações do modo foco (`reminders.rs`).
     pub focus: crate::reminders::FocusConfig,
+    /// Foco em andamento, para retomar ao reabrir o app (`reminders.rs`); `None` = desligado.
+    pub focus_run: Option<crate::reminders::FocusRun>,
     /// Dança quando tem som saindo do computador.
     pub dance_on_music: bool,
     /// Balão de fala (frequência e frases extras).
@@ -226,6 +228,7 @@ impl Default for Config {
             water: WaterConfig::default(),
             reminders: Default::default(),
             focus: Default::default(),
+            focus_run: None,
             dance_on_music: true,
             speech: crate::speech::SpeechConfig::default(),
             notified_update: None,

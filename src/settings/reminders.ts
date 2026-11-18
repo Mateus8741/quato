@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { unknownChars } from '../sprites/font.ts';
 import {
   BREAK_MAX_MIN,
+  FOCUS_CYCLES_MAX,
   FOCUS_MAX_MIN,
   REMINDER_TEXT_MAX,
   type ReminderKind,
@@ -56,7 +57,8 @@ export function focusStatusText(s: RemindersStatus, elapsedSec = 0): string {
   if (s.focusPhase === 'off' || s.focusRemainingSec === null) return '';
   const left = Math.max(0, s.focusRemainingSec - elapsedSec);
   const what = s.focusPhase === 'focus' ? 'Foco' : 'Pausa';
-  return left < 60 ? `${what}: falta menos de 1 min.` : `${what}: faltam ~${formatMinutes(Math.ceil(left / 60))}.`;
+  const cycle = s.focusCyclesTotal > 1 ? ` (ciclo ${s.focusCycle} de ${s.focusCyclesTotal})` : '';
+  return left < 60 ? `${what}${cycle}: falta menos de 1 min.` : `${what}${cycle}: faltam ~${formatMinutes(Math.ceil(left / 60))}.`;
 }
 
 function nextOf(s: RemindersStatus, k: ReminderKind): number | null {
@@ -115,8 +117,13 @@ export function remindersHtml(v: SettingsView): string {
         <input id="break-min" type="number" inputmode="numeric" min="1" max="${BREAK_MAX_MIN}" step="1" value="${f.breakMin}" data-break-min />
         <span>min</span>
       </div>
+      <div class="water-row">
+        <label for="focus-cycles">Ciclos</label>
+        <input id="focus-cycles" type="number" inputmode="numeric" min="1" max="${FOCUS_CYCLES_MAX}" step="1" value="${f.cycles}" data-focus-cycles />
+        <span>(foco, pausa, foco, pausa...; 1 = uma vez só)</span>
+      </div>
       ${msgs.focus ? `<p class="err" role="alert">${esc(msgs.focus)}</p>` : ''}
-      <p class="note">Durante o foco o pato dorme e fica quieto, e todos os lembretes (inclusive o de água) ficam suspensos. No fim, uma plaquinha anuncia a pausa; depois dela tudo volta ao normal. Também dá para iniciar e parar pelo menu da barra.</p>
+      <p class="note">Durante o foco o pato dorme e fica quieto, e todos os lembretes (inclusive o de água) ficam suspensos. No fim, uma plaquinha anuncia a pausa; depois dela tudo volta ao normal, ou começa o próximo ciclo se você pediu mais de um. O foco em andamento é lembrado ao reabrir o app (se ainda não tiver acabado). Também dá para iniciar e parar pelo menu da barra.</p>
       <p class="note" data-focus-status aria-live="polite">${esc(focusStatusText(v.reminders))}</p>
       <div class="buttons"><button class="${phase === 'off' ? 'primary' : ''}" data-focus-toggle>${btn}</button></div></section>`;
 
@@ -127,7 +134,7 @@ export function remindersHtml(v: SettingsView): string {
 }
 
 /** Seletor dos campos que não devem ser apagados por um redesenho enquanto a pessoa digita. */
-export const REMINDER_INPUTS = '[data-rem-min],[data-rem-text],[data-focus-min],[data-break-min]';
+export const REMINDER_INPUTS = '[data-rem-min],[data-rem-text],[data-focus-min],[data-break-min],[data-focus-cycles]';
 
 function field(root: HTMLElement, sel: string): HTMLInputElement {
   return root.querySelector<HTMLInputElement>(sel)!;
@@ -157,20 +164,21 @@ export function bindReminders(app: HTMLElement, getView: () => SettingsView | nu
     if (!v) return;
     const f = parseMinutes(field(app, '[data-focus-min]').value, FOCUS_MAX_MIN);
     const b = parseMinutes(field(app, '[data-break-min]').value, BREAK_MAX_MIN);
-    if (f === null || b === null) {
-      msgs.focus = `Digite os minutos: foco de 1 a ${FOCUS_MAX_MIN}, pausa de 1 a ${BREAK_MAX_MIN}.`;
+    const c = parseMinutes(field(app, '[data-focus-cycles]').value, FOCUS_CYCLES_MAX);
+    if (f === null || b === null || c === null) {
+      msgs.focus = `Digite os minutos (foco de 1 a ${FOCUS_MAX_MIN}, pausa de 1 a ${BREAK_MAX_MIN}) e os ciclos (1 a ${FOCUS_CYCLES_MAX}).`;
       setView(v);
       return;
     }
     msgs.focus = undefined;
-    setView(await invoke<SettingsView>('set_focus_config', { focusMin: f, breakMin: b }));
+    setView(await invoke<SettingsView>('set_focus_config', { focusMin: f, breakMin: b, cycles: c }));
   }
 
   app.addEventListener('change', (e) => {
     const t = e.target as HTMLElement;
     const kind = (t.dataset.remOn ?? t.dataset.remMin ?? t.dataset.remText) as ReminderKind | undefined;
     if (kind) void saveReminder(kind);
-    else if (t.matches('[data-focus-min],[data-break-min]')) void saveFocus();
+    else if (t.matches('[data-focus-min],[data-break-min],[data-focus-cycles]')) void saveFocus();
   });
 
   app.addEventListener('click', (e) => {

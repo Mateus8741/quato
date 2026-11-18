@@ -23,6 +23,7 @@ pub struct TrayHandles {
     pub moods: Vec<(Mood, CheckMenuItem<Wry>)>,
     pub drag: CheckMenuItem<Wry>,
     pub water: CheckMenuItem<Wry>,
+    pub crumb: MenuItem<Wry>,
     pub update: MenuItem<Wry>,
 }
 

@@ -11,6 +11,11 @@ pub fn sanitize(mut cfg: Config) -> Config {
     cfg.accessories = crate::look::sanitize_accessories(&cfg.accessories);
     cfg.water.interval_min = crate::events::clamp_water_interval(cfg.water.interval_min);
     (cfg.reminders, cfg.focus) = crate::reminders::sanitize_config(cfg.reminders, cfg.focus);
+    if let Some(run) = cfg.focus_run {
+        if run.phase == crate::reminders::FocusPhase::Off || !run.ends_at.is_finite() {
+            cfg.focus_run = None;
+        }
+    }
     cfg.speech.extra = crate::speech::sanitize_extra(&cfg.speech.extra);
     cfg
 }

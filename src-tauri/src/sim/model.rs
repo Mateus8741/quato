@@ -37,6 +37,17 @@ enum Mode {
     Crumb,
 }
 
+/// Onde a migalha cai: no cursor se ele está na área útil; senão, ao lado do pato (do lado com mais espaço).
+pub fn crumb_spot(cursor: Vec2, bounds: Rect, duck: Vec2, scale: f32) -> Vec2 {
+    let inside = cursor.x >= bounds.x && cursor.x <= bounds.right() && cursor.y >= bounds.y && cursor.y <= bounds.bottom();
+    if inside {
+        return cursor;
+    }
+    let reach = 110.0 * scale;
+    let side = if duck.x - bounds.x > bounds.right() - duck.x { -1.0 } else { 1.0 };
+    bounds.clamp(Vec2::new(duck.x + side * reach, duck.y + BEAK.y * scale))
+}
+
 /// O que a simulação conta para quem desenha a migalha (`crumb.rs`).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum CrumbEvent {
@@ -246,7 +257,10 @@ impl Sim {
     }
 
     /// Pedido de migalha: só vale se ele não estiver dormindo de sono, no colo nem arrastando o mouse.
-    fn try_drop_crumb(&mut self, cursor: Vec2, now: f64) {
+    ///
+    /// Se o cursor está fora da área útil (ex.: no menu da bandeja, na barra de menus), a migalha cai perto do pato.
+    fn try_drop_crumb(&mut self, cursor: Vec2, bounds: Rect, scale: f32, now: f64) {
+        let cursor = crumb_spot(cursor, bounds, self.pos, scale);
         let eating = self.crumb.is_some_and(|c| c.eating_until.is_some());
         if self.mood == Mood::Sono || matches!(self.mode, Mode::Held | Mode::Grab) || eating {
             return;
@@ -414,7 +428,7 @@ impl Sim {
         }
 
         if std::mem::take(&mut self.crumb_request) {
-            self.try_drop_crumb(i.cursor, now);
+            self.try_drop_crumb(i.cursor, i.bounds, i.unit_scale, now);
         }
 
         // Transições por flag de perseguição (perseguir tem prioridade sobre dançar).
@@ -1073,6 +1087,19 @@ mod tests {
         let mut sim = Sim::new(mood, 3);
         let (now, _, _) = run(&mut sim, 0.0, 1.0, Vec2::new(200.0, 200.0), false, true);
         (sim, now)
+    }
+
+    #[test]
+    fn crumb_outside_the_work_area_lands_near_the_duck() {
+        let b = Rect::new(0.0, 25.0, 1600.0, 975.0);
+        let inside = Vec2::new(300.0, 400.0);
+        assert_eq!(crumb_spot(inside, b, Vec2::new(800.0, 900.0), 1.0), inside);
+        // cursor na barra de menus (acima da área útil)
+        let spot = crumb_spot(Vec2::new(1500.0, 5.0), b, Vec2::new(200.0, 900.0), 1.0);
+        assert!(spot.x > 200.0 && spot.x <= 400.0 && b.clamp(spot) == spot, "{spot:?}");
+        // pato perto da borda direita: a migalha vai para a esquerda, dentro da área
+        let spot = crumb_spot(Vec2::new(-50.0, 5.0), b, Vec2::new(1590.0, 900.0), 1.0);
+        assert!(spot.x < 1590.0 && b.clamp(spot) == spot, "{spot:?}");
     }
 
     #[test]

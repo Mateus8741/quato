@@ -144,10 +144,10 @@ pub async fn reminder_test(app: AppHandle, kind: crate::reminders::ReminderKind)
     crate::reminders::show_now(&app, kind);
 }
 
-/// Durações do modo foco, em minutos (ajustadas aqui).
+/// Durações do modo foco, em minutos, e número de ciclos (ajustados aqui).
 #[tauri::command]
-pub async fn set_focus_config(app: AppHandle, focus_min: u32, break_min: u32) -> SettingsView {
-    crate::reminders::set_focus_config(&app, focus_min, break_min);
+pub async fn set_focus_config(app: AppHandle, focus_min: u32, break_min: u32, cycles: u32) -> SettingsView {
+    crate::reminders::set_focus_config(&app, focus_min, break_min, cycles);
     actions::settings_view(&app)
 }
 

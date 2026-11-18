@@ -8,6 +8,8 @@ const status = (over: Partial<RemindersStatus>): RemindersStatus => ({
   eyesNextInSec: null,
   focusPhase: 'off',
   focusRemainingSec: null,
+  focusCycle: 0,
+  focusCyclesTotal: 0,
   ...over,
 });
 
@@ -40,6 +42,9 @@ describe('focusStatusText', () => {
   });
   it('mostra fase e tempo restante', () => {
     expect(focusStatusText(status({ focusPhase: 'focus', focusRemainingSec: 1500 }))).toBe('Foco: faltam ~25 min.');
+    expect(focusStatusText(status({ focusPhase: 'focus', focusRemainingSec: 1500, focusCycle: 2, focusCyclesTotal: 4 }))).toBe(
+      'Foco (ciclo 2 de 4): faltam ~25 min.',
+    );
     expect(focusStatusText(status({ focusPhase: 'break', focusRemainingSec: 300 }), 250)).toBe('Pausa: falta menos de 1 min.');
   });
 });

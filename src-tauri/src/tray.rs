@@ -28,6 +28,18 @@ fn chase_label(app: &AppHandle) -> String {
     }
 }
 
+fn crumb_label(app: &AppHandle) -> String {
+    let st = app.state::<AppState>();
+    let accel = st.config.lock().unwrap().shortcuts.drop_crumb.clone();
+    let broken = st.shortcut_status.lock().unwrap().drop_crumb.is_some();
+    let txt = format_accelerator(&accel, current_platform());
+    if broken {
+        format!("Jogar migalha  ⚠ ({txt} indisponível)")
+    } else {
+        format!("Jogar migalha  ({txt})")
+    }
+}
+
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let chase = CheckMenuItem::with_id(app, "chase", chase_label(app), true, false, None::<&str>)?;
     let roam = CheckMenuItem::with_id(app, "roam", "Passear pela tela toda", true, false, None::<&str>)?;
@@ -37,6 +49,7 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     }
     let refs: Vec<&dyn IsMenuItem<Wry>> = mood_items.iter().map(|(_, i)| i as &dyn IsMenuItem<Wry>).collect();
     let moods = Submenu::with_items(app, "Humor", true, &refs)?;
+    let crumb = MenuItem::with_id(app, "crumb", crumb_label(app), true, None::<&str>)?;
     let drag = CheckMenuItem::with_id(app, "drag", "Arrastar o mouse", true, false, None::<&str>)?;
     let release = MenuItem::with_id(app, "release", "Soltar o mouse agora", true, None::<&str>)?;
     let water = CheckMenuItem::with_id(app, "water", "Lembrete de água", true, false, None::<&str>)?;
@@ -47,11 +60,11 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let quit = MenuItem::with_id(app, "quit", "Sair", true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
     let sep2 = PredefinedMenuItem::separator(app)?;
-    let menu = Menu::with_items(app, &[&chase, &roam, &moods, &drag, &release, &sep2, &water, &drank, &more, &focus, &sep, &update, &settings, &quit])?;
+    let menu = Menu::with_items(app, &[&chase, &roam, &moods, &crumb, &drag, &release, &sep2, &water, &drank, &more, &focus, &sep, &update, &settings, &quit])?;
 
     crate::autostart::add_to_menu(app, &menu)?;
 
-    *app.state::<AppState>().tray.lock().unwrap() = Some(TrayHandles { chase, roam, moods: mood_items, drag, water, update });
+    *app.state::<AppState>().tray.lock().unwrap() = Some(TrayHandles { chase, roam, moods: mood_items, drag, water, crumb, update });
 
     TrayIconBuilder::with_id("main")
         .icon(Image::from_bytes(include_bytes!("../icons/tray@2x.png"))?)
@@ -84,6 +97,7 @@ fn on_menu(app: &AppHandle, id: &str) {
             let target = !actions::current_view(app).drag_enabled;
             let _ = actions::set_drag(app, target);
         }
+        "crumb" => actions::drop_crumb(app),
         "release" => actions::release_mouse(app),
         "water" => crate::water::toggle(app),
         "water_drank" => crate::water::drank(app),
@@ -121,15 +135,22 @@ pub fn sync(app: &AppHandle) {
     crate::autostart::sync_tray(app);
     crate::reminders::sync_tray(app);
     let label = chase_label(app);
+    let crumb_text = crumb_label(app);
     let update_text = update_label(crate::update::current(app).as_ref());
-    let handles = st.tray.lock().unwrap().as_ref().map(|h| (h.chase.clone(), h.roam.clone(), h.drag.clone(), h.moods.clone(), h.water.clone(), h.update.clone()));
-    let Some((chase, roam, drag, moods, water, update)) = handles else { return };
+    let handles = st
+        .tray
+        .lock()
+        .unwrap()
+        .as_ref()
+        .map(|h| (h.chase.clone(), h.roam.clone(), h.drag.clone(), h.moods.clone(), h.water.clone(), h.crumb.clone(), h.update.clone()));
+    let Some((chase, roam, drag, moods, water, crumb, update)) = handles else { return };
     let _ = app.run_on_main_thread(move || {
         let _ = chase.set_checked(view.chasing);
         let _ = chase.set_text(label);
         let _ = roam.set_checked(free_roam);
         let _ = drag.set_checked(view.drag_enabled);
         let _ = water.set_checked(water_on);
+        let _ = crumb.set_text(crumb_text);
         let _ = update.set_text(update_text);
         for (m, item) in &moods {
             let _ = item.set_checked(*m == mood);

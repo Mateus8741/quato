@@ -172,6 +172,8 @@ export interface RemindersConfig {
 export interface FocusConfig {
   focusMin: number;
   breakMin: number;
+  /** Ciclos foco -> pausa seguidos (1 a 12; 1 = um só). */
+  cycles: number;
 }
 
 export interface RemindersStatus {
@@ -181,8 +183,12 @@ export interface RemindersStatus {
   focusPhase: 'off' | 'focus' | 'break';
   /** Segundos até o fim da fase atual; null = foco desligado. */
   focusRemainingSec: number | null;
+  /** Ciclo atual (a partir de 1) e total; 0 com o foco desligado. */
+  focusCycle: number;
+  focusCyclesTotal: number;
 }
 
 export const FOCUS_MAX_MIN = 180;
 export const BREAK_MAX_MIN = 60;
+export const FOCUS_CYCLES_MAX = 12;
 export const REMINDER_TEXT_MAX = 28;
