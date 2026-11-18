@@ -179,6 +179,7 @@ pub fn settings_view(app: &AppHandle) -> SettingsView {
         accessibility: crate::accessibility::status(),
         defaults: ShortcutsConfig::default(),
         water_next_in_sec,
+        reminders: crate::reminders::status(app),
         app_version: crate::update::CURRENT_VERSION.to_string(),
         update: crate::update::current(app),
     }

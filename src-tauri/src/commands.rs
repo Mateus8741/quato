@@ -125,6 +125,39 @@ pub async fn water_test(app: AppHandle) {
     crate::water::show_now(&app);
 }
 
+/// Liga/desliga um lembrete novo (postura, alongar, vista); intervalo e texto são ajustados aqui.
+#[tauri::command]
+pub async fn set_reminder(app: AppHandle, kind: crate::reminders::ReminderKind, enabled: bool, interval_min: u32, text: String) -> SettingsView {
+    crate::reminders::set(&app, kind, enabled, interval_min, &text);
+    actions::settings_view(&app)
+}
+
+/// "Já fiz": recomeça a contagem e esconde a plaquinha.
+#[tauri::command]
+pub async fn reminder_done(app: AppHandle, kind: crate::reminders::ReminderKind) {
+    crate::reminders::done(&app, kind);
+}
+
+/// Mostra a plaquinha do lembrete agora.
+#[tauri::command]
+pub async fn reminder_test(app: AppHandle, kind: crate::reminders::ReminderKind) {
+    crate::reminders::show_now(&app, kind);
+}
+
+/// Durações do modo foco, em minutos (ajustadas aqui).
+#[tauri::command]
+pub async fn set_focus_config(app: AppHandle, focus_min: u32, break_min: u32) -> SettingsView {
+    crate::reminders::set_focus_config(&app, focus_min, break_min);
+    actions::settings_view(&app)
+}
+
+/// Inicia o modo foco (ou para, se já estiver rodando).
+#[tauri::command]
+pub async fn focus_toggle(app: AppHandle) -> SettingsView {
+    crate::reminders::toggle_focus(&app);
+    actions::settings_view(&app)
+}
+
 #[tauri::command]
 pub async fn set_dance_on_music(app: AppHandle, enabled: bool) {
     actions::set_dance_on_music(&app, enabled);

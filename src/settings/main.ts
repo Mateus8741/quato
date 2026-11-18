@@ -6,6 +6,7 @@ import { ACCESSORIES, COLORS, SKINS } from '../sprites/index.ts';
 import { formatAccelerator } from './accelerator.ts';
 import { recordShortcut } from './shortcut-recorder.ts';
 import { nextReminderText, parseInterval, WATER_PRESETS } from './water.ts';
+import { bindReminders, REMINDER_INPUTS, remindersHtml } from './reminders.ts';
 
 const app = document.getElementById('app')!;
 let view: SettingsView | null = null;
@@ -127,6 +128,7 @@ function render(): void {
       <p class="note"><b>Mudar o lugar dele:</b> segure <kbd class="mini">${platform === 'macos' ? '⌃ Ctrl' : 'Ctrl'}</kbd> e arraste o pato. Ele passa a andar por onde você soltar.</p>
       <button data-home-reset ${v.config.home ? '' : 'disabled'}>Voltar para o canto</button></section>
     ${waterHtml}
+    ${remindersHtml(v)}
     <section><h2>Dança</h2>
       <label class="check"><input type="checkbox" data-dance-music ${v.config.danceOnMusic ? 'checked' : ''} /> Dançar quando tiver som tocando</label>
       <p class="note">Ele percebe quando tem <b>som saindo do computador</b>, seja música, vídeo, chamada ou um aviso, e dança enquanto durar (para uns segundos depois que o som acaba). Não ouve nem grava nada: só pergunta ao sistema se a saída de som está tocando. ${platform === 'macos' ? 'No Mac, alguns apps deixam o som “aberto” mesmo em silêncio; aí ele pode dançar sem música.' : ''}</p>
@@ -182,7 +184,7 @@ function setView(v: SettingsView): void {
   view = v;
   waterNext = { sec: v.waterNextInSec, at: performance.now() };
   // Não apaga o que a pessoa está digitando no campo de minutos.
-  if ((document.activeElement as HTMLElement | null)?.matches?.('[data-water-min]')) {
+  if ((document.activeElement as HTMLElement | null)?.matches?.(`[data-water-min],${REMINDER_INPUTS}`)) {
     pendingRender = true;
     return;
   }
@@ -317,7 +319,7 @@ async function start(): Promise<void> {
 }
 
 app.addEventListener('focusout', (e) => {
-  if ((e.target as HTMLElement).matches('[data-water-min]') && pendingRender) {
+  if ((e.target as HTMLElement).matches(`[data-water-min],${REMINDER_INPUTS}`) && pendingRender) {
     // Espera o 'change' (que vem logo depois) antes de redesenhar.
     window.setTimeout(() => { if (pendingRender && view) setView(view); }, 0);
   }
@@ -327,5 +329,7 @@ app.addEventListener('keydown', (e) => {
   const t = e.target as HTMLInputElement;
   if (e.key === 'Enter' && t.matches('[data-water-min]')) t.blur();
 });
+
+bindReminders(app, () => view, setView);
 
 start().catch((e) => { app.textContent = `Erro ao carregar: ${String(e)}`; });

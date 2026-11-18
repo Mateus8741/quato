@@ -51,6 +51,8 @@ pub enum SimCommand {
     SetMusic(bool),
     /// Preferência "Dançar quando tiver som tocando".
     SetDanceOnMusic(bool),
+    /// Modo foco: o pato fica quieto e dormindo (não persegue, não dança, o cursor não o acorda).
+    SetFocus(bool),
 }
 
 pub struct SimInput {
@@ -100,6 +102,8 @@ pub struct Sim {
     pending_new_home: Option<Vec2>,
     music: bool,
     dance_on_music: bool,
+    /// Modo foco (Pomodoro) ligado.
+    focus: bool,
     /// Atirando no cursor (arminha + raiva): fica sempre virado para ele.
     aiming: bool,
     initialized: bool,
@@ -133,6 +137,7 @@ impl Sim {
             pending_new_home: None,
             music: false,
             dance_on_music: true,
+            focus: false,
             aiming: false,
             initialized: false,
             rng: fastrand::Rng::with_seed(seed),
@@ -150,7 +155,7 @@ impl Sim {
 
     /// Quer dançar agora? (o modo só vira Dance se estiver parado/passeando)
     fn wants_dance(&self) -> bool {
-        self.mood == Mood::Danca || (self.music && self.dance_on_music)
+        !self.focus && (self.mood == Mood::Danca || (self.music && self.dance_on_music))
     }
 
     pub fn is_grabbing(&self) -> bool {
@@ -202,7 +207,7 @@ impl Sim {
                 if !on && self.mode == Mode::Grab {
                     self.release_grab(ReleaseReason::Command, now, GRAB_COOLDOWN);
                 }
-                if on && self.mode == Mode::Sleep {
+                if on && self.mode == Mode::Sleep && !self.focus {
                     self.mode = Mode::Chase;
                 }
                 self.last_move_at = now;
@@ -259,6 +264,15 @@ impl Sim {
             }
             SimCommand::SetMusic(on) => self.music = on,
             SimCommand::SetDanceOnMusic(on) => self.dance_on_music = on,
+            SimCommand::SetFocus(on) => {
+                self.focus = on;
+                if !on && self.mode == Mode::Sleep {
+                    // Fim do foco: acorda.
+                    self.mode = if self.chasing { Mode::Chase } else { Mode::Idle };
+                    self.last_move_at = now;
+                    self.schedule_wander(now);
+                }
+            }
         }
     }
 
@@ -325,10 +339,15 @@ impl Sim {
         }
 
         // Transições por flag de perseguição (perseguir tem prioridade sobre dançar).
-        if self.chasing && matches!(self.mode, Mode::Idle | Mode::Wander | Mode::Dance) {
+        // Foco: dorme na hora (de parado, passeando, dançando ou perseguindo) e fica dormindo.
+        if self.focus && matches!(self.mode, Mode::Idle | Mode::Wander | Mode::Dance | Mode::Chase) {
+            self.mode = Mode::Sleep;
+            self.vel = Vec2::ZERO;
+        }
+        if self.chasing && !self.focus && matches!(self.mode, Mode::Idle | Mode::Wander | Mode::Dance) {
             self.mode = Mode::Chase;
         }
-        if self.chasing && self.mode == Mode::Sleep && (moved || self.mood != Mood::Sono) {
+        if self.chasing && !self.focus && self.mode == Mode::Sleep && (moved || self.mood != Mood::Sono) {
             self.mode = Mode::Chase;
         }
         if !self.chasing && self.mode == Mode::Chase {
@@ -343,7 +362,7 @@ impl Sim {
             self.mode = Mode::Sleep;
             self.vel = Vec2::ZERO;
         }
-        if self.mode == Mode::Sleep && !self.chasing && moved {
+        if self.mode == Mode::Sleep && !self.chasing && !self.focus && moved {
             self.mode = Mode::Idle;
             self.schedule_wander(now);
         }
@@ -842,6 +861,23 @@ mod tests {
         assert_eq!(sim.step(&input(Vec2::new(10.0, 10.0), now, true)).view.mode, DuckMode::Dance);
         sim.apply(SimCommand::SetDanceOnMusic(false), now);
         assert_eq!(sim.step(&input(Vec2::new(10.0, 10.0), now, true)).view.mode, DuckMode::Idle);
+    }
+
+    #[test]
+    fn focus_sleeps_at_once_ignores_cursor_and_wakes_after() {
+        let mut sim = Sim::new(Mood::Danca, 1);
+        sim.apply(SimCommand::SetChasing(true), 0.0);
+        let (now, mode) = mode_after(&mut sim, 0.0, 1.0, Vec2::new(300.0, 300.0));
+        assert_eq!(mode, DuckMode::Chase);
+        sim.apply(SimCommand::SetFocus(true), now);
+        let (now, mode) = mode_after(&mut sim, now, 0.5, Vec2::new(300.0, 300.0));
+        assert_eq!(mode, DuckMode::Sleep);
+        // o cursor mexendo não acorda nem faz perseguir
+        let (now, mode) = mode_after(&mut sim, now, 2.0, Vec2::new(900.0, 100.0));
+        assert_eq!(mode, DuckMode::Sleep);
+        sim.apply(SimCommand::SetFocus(false), now);
+        let (_, mode) = mode_after(&mut sim, now, 0.5, Vec2::new(900.0, 100.0));
+        assert_ne!(mode, DuckMode::Sleep, "acorda quando o foco acaba");
     }
 
     #[test]

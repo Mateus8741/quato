@@ -174,6 +174,10 @@ pub struct Config {
     pub home: Option<[f32; 2]>,
     /// Lembrete de água.
     pub water: WaterConfig,
+    /// Lembretes de postura, alongar e vista (`reminders.rs`).
+    pub reminders: crate::reminders::RemindersConfig,
+    /// Durações do modo foco (`reminders.rs`).
+    pub focus: crate::reminders::FocusConfig,
     /// Dança quando tem som saindo do computador.
     pub dance_on_music: bool,
     /// Última versão nova que já avisamos com a plaquinha.
@@ -212,6 +216,8 @@ impl Default for Config {
             free_roam: false,
             home: None,
             water: WaterConfig::default(),
+            reminders: Default::default(),
+            focus: Default::default(),
             dance_on_music: true,
             notified_update: None,
             notified_at: 0,
@@ -234,6 +240,8 @@ pub struct SettingsView {
     pub defaults: ShortcutsConfig,
     /// Segundos até o próximo lembrete de água (`None` = desligado).
     pub water_next_in_sec: Option<u32>,
+    /// Contagens dos outros lembretes e fase do modo foco.
+    pub reminders: crate::reminders::RemindersStatus,
     /// Versão instalada.
     pub app_version: String,
     /// Versão mais nova disponível, se houver.

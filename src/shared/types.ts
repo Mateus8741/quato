@@ -34,6 +34,10 @@ export interface Config {
   home: [number, number] | null;
   /** Lembrete de água (intervalo em minutos, 1..720). */
   water: WaterConfig;
+  /** Lembretes de postura, alongar e vista. */
+  reminders: RemindersConfig;
+  /** Durações do modo foco. */
+  focus: FocusConfig;
   /** Dança quando tem som saindo do computador. */
   danceOnMusic: boolean;
   /** Última versão nova já avisada com a plaquinha. */
@@ -83,6 +87,8 @@ export interface SettingsView {
   defaults: ShortcutsConfig;
   /** Segundos até o próximo lembrete de água; null = desligado. */
   waterNextInSec: number | null;
+  /** Contagens dos outros lembretes e fase do modo foco. */
+  reminders: RemindersStatus;
   /** Versão instalada (ex.: "0.3.1"). */
   appVersion: string;
   /** Versão mais nova disponível; null = em dia (ou ainda não verificou). */
@@ -125,3 +131,39 @@ export interface DuckGesture {
   kind: 'feather';
   durationMs: number;
 }
+
+/** Lembretes além da água (espelha `reminders.rs`). */
+export type ReminderKind = 'posture' | 'stretch' | 'eyes';
+
+export interface ReminderConfig {
+  enabled: boolean;
+  /** Minutos entre um lembrete e outro (1..720). */
+  intervalMin: number;
+  /** Texto da plaquinha (até 28 letras). */
+  text: string;
+}
+
+export interface RemindersConfig {
+  posture: ReminderConfig;
+  stretch: ReminderConfig;
+  eyes: ReminderConfig;
+}
+
+/** Durações do modo foco (Pomodoro), em minutos. */
+export interface FocusConfig {
+  focusMin: number;
+  breakMin: number;
+}
+
+export interface RemindersStatus {
+  postureNextInSec: number | null;
+  stretchNextInSec: number | null;
+  eyesNextInSec: number | null;
+  focusPhase: 'off' | 'focus' | 'break';
+  /** Segundos até o fim da fase atual; null = foco desligado. */
+  focusRemainingSec: number | null;
+}
+
+export const FOCUS_MAX_MIN = 180;
+export const BREAK_MAX_MIN = 60;
+export const REMINDER_TEXT_MAX = 28;

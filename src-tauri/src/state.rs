@@ -44,6 +44,9 @@ pub struct AppState {
     pub duck_geom: Mutex<DuckGeom>,
     /// Agendador do lembrete de água (relógio: `water::clock`).
     pub water: Mutex<WaterTimer>,
+    /// Lembretes novos e modo foco (`reminders.rs`).
+    pub reminders: Mutex<crate::reminders::Engine>,
+    pub rem_tray: Mutex<Option<crate::reminders::TrayItems>>,
     /// Versão nova encontrada (None = em dia ou ainda não verificou).
     pub update: Mutex<Option<crate::update::UpdateInfo>>,
 }
@@ -53,6 +56,8 @@ impl AppState {
         let water = WaterTimer::new(config.water.enabled, config.water.interval_min, crate::water::clock());
         Self {
             water: Mutex::new(water),
+            reminders: Mutex::new(crate::reminders::Engine::new(&config.reminders, crate::water::clock())),
+            rem_tray: Mutex::new(None),
             update: Mutex::new(None),
             tx,
             view: Mutex::new(view),

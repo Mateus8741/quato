@@ -106,7 +106,13 @@ pub fn spawn(app: AppHandle) {
             let (fire, wait) = {
                 let st = app.state::<AppState>();
                 let mut t = st.water.lock().unwrap();
-                let fire = t.poll(now);
+                // Durante o foco a água também fica quieta (e recomeça a contagem).
+                let fire = if crate::reminders::suppressing(&app) {
+                    t.drank(now);
+                    false
+                } else {
+                    t.poll(now)
+                };
                 (fire, t.remaining(now).unwrap_or(1.0).clamp(0.05, 1.0))
             };
             if fire {

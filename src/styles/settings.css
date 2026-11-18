@@ -47,3 +47,5 @@ section.dim .note { opacity: 1; }
 
 .about { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(128, 128, 128, .25); color: var(--muted); font-size: 12px; }
 .about .note { margin: 0; }
+.rem { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 10px; }
+.rem h3 { font-size: 13px; margin: 4px 0 8px; }
