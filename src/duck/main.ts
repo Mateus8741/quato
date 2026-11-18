@@ -3,6 +3,7 @@ import type { DuckGesture, DuckSign, DuckView, Look } from '../shared/types.ts';
 import { Animator } from './animator.ts';
 import { Renderer } from './renderer.ts';
 import { TopStrip } from './top.ts';
+import { withSeasonal } from '../sprites/seasonal.ts';
 
 // Ctrl + clique no Mac vira clique direito: não mostra o menu do navegador.
 window.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -44,10 +45,14 @@ async function start(): Promise<void> {
   relayout();
   window.addEventListener('resize', relayout);
   const animator = new Animator(new Renderer(duck), top);
-  animator.setLook(await api.getLook());
+  // Acessório sazonal: aplicado aqui, com a data de hoje (reavaliado de tempos em tempos, para virar o dia).
+  let rawLook = await api.getLook();
+  const applyLook = () => animator.setLook({ ...rawLook, accessories: withSeasonal(rawLook.accessories, rawLook.seasonal === true, new Date()) });
+  applyLook();
+  window.setInterval(applyLook, 30 * 60 * 1000);
   animator.update(await api.getDuckView());
   await on<DuckView>(EV.duckView, (v) => animator.update(v));
-  await on<Look>(EV.duckLook, (l) => animator.setLook(l));
+  await on<Look>(EV.duckLook, (l) => { rawLook = l; applyLook(); });
   await on<DuckSign>(EV.duckSign, (s) => top.showSign(s.text, s.durationMs, s.kind));
   await on<DuckGesture>(EV.duckGesture, (g) => {
     if (g.kind === 'feather') animator.gesture(g.durationMs);

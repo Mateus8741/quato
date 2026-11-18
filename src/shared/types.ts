@@ -39,6 +39,8 @@ export interface Config {
   /** Última versão nova já avisada com a plaquinha. */
   notifiedUpdate?: string | null;
   notifiedAt?: number;
+  /** Acessórios sazonais (Natal, Halloween, Ano Novo) quando o espaço está livre. */
+  seasonalAccessories?: boolean;
 }
 
 export interface WaterConfig {
@@ -53,6 +55,8 @@ export const WATER_MAX_INTERVAL = 720;
 export interface Look {
   color: string;
   accessories: string[];
+  /** Acessórios sazonais ligados (quem desenha aplica a data). */
+  seasonal?: boolean;
 }
 
 export interface ShortcutStatus {

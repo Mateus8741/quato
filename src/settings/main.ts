@@ -117,7 +117,9 @@ function render(): void {
     <section id="color" class="${lizard ? 'dim' : ''}"><h2>Cor</h2><div class="moods">${colorHtml}</div>
       ${lizard ? '<p class="note">O lagartinho é sempre verde. A cor vale para o pato.</p>' : ''}</section>
     <section><h2>Acessórios</h2><div class="moods">${accHtml2}</div>
-      <p class="note">Dá para combinar, um por lugar: um item de cabeça (peruca, chapéu, coroa), um de rosto (óculos), fones, laço e flor.</p>
+      <p class="note">Dá para combinar, um por lugar: um item de cabeça (peruca, chapéu, gorro, coroa), um de rosto (óculos, tapa-olho), fones, laço ou capa, mochila e flor.</p>
+      <label class="check"><input type="checkbox" data-seasonal ${v.config.seasonalAccessories ? 'checked' : ''} /> Acessórios sazonais</label>
+      <p class="note">Ligado, em datas especiais (gorro de Natal de 15 a 26/dez, chapéu de bruxa de 25 a 31/out, chapéu de festa no Ano Novo, de 31/dez a 2/jan) o pato usa o acessório da data, só se você não escolheu nenhum item de cabeça.</p>
       <button data-acc-clear ${look.accessories.length ? '' : 'disabled'}>Tirar todos os acessórios</button></section>
     <section><h2>Passeio</h2>
       <label class="check"><input type="checkbox" data-roam ${v.config.freeRoam ? 'checked' : ''} /> Passear pela tela toda</label>
@@ -273,6 +275,10 @@ app.addEventListener('change', async (e) => {
   }
   if (t.matches('[data-water-min]')) {
     await applyWaterInterval(t);
+    return;
+  }
+  if (t.matches('[data-seasonal]')) {
+    await api.setSeasonalAccessories(t.checked);
     return;
   }
   if (t.matches('[data-dance-music]')) {

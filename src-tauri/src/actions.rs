@@ -39,7 +39,7 @@ pub fn set_mood(app: &AppHandle, mood: Mood) {
 pub fn current_look(app: &AppHandle) -> Look {
     let st = app.state::<AppState>();
     let cfg = st.config.lock().unwrap();
-    Look { color: cfg.color.clone(), accessories: cfg.accessories.clone() }
+    Look { color: cfg.color.clone(), accessories: cfg.accessories.clone(), seasonal: cfg.seasonal_accessories }
 }
 
 fn look_changed(app: &AppHandle) {
@@ -62,6 +62,16 @@ pub fn set_accessories(app: &AppHandle, list: &[String]) {
         let st = app.state::<AppState>();
         let mut cfg = st.config.lock().unwrap();
         cfg.accessories = crate::look::sanitize_accessories(list);
+        crate::config::save(app, &cfg);
+    }
+    look_changed(app);
+}
+
+pub fn set_seasonal_accessories(app: &AppHandle, on: bool) {
+    {
+        let st = app.state::<AppState>();
+        let mut cfg = st.config.lock().unwrap();
+        cfg.seasonal_accessories = on;
         crate::config::save(app, &cfg);
     }
     look_changed(app);

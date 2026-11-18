@@ -180,6 +180,91 @@ export const ACCESSORIES: readonly Accessory[] = [
       '..OOO..',
     ],
   },
+  // ---- acessórios novos: sazonais (gorro, bruxa), capa, mochila e kit pirata ----
+  {
+    id: 'gorro-natal', label: 'Gorro de Natal', layer: 'back', dx: -6, dy: -8,
+    palette: { R: '#d62839', r: '#a31621', W: '#ffffff', w: '#dfe6ee' },
+    grid: [
+      '......WW',
+      '.....WWW',
+      '...RRRR.',
+      '..RRRrR.',
+      '.RRRRRR.',
+      'WWWWWWWW',
+      'wWWWWWWw',
+    ],
+  },
+  {
+    id: 'chapeu-bruxa', label: 'Chapéu de bruxa', layer: 'back', dx: -8, dy: -8,
+    palette: { P: '#3b2a5a', p: '#2a1d42', B: '#f2a33a', Y: '#ffd23f' },
+    grid: [
+      '.....PP.....',
+      '....PPp.....',
+      '...PPPPp....',
+      '...PPPPp....',
+      '..BBBBBBB...',
+      '..PPYYPPp...',
+      'ppppppppppp.',
+    ],
+  },
+  {
+    // Capa vermelha amarrada no pescoço, caindo pelas costas (mesmo espaço do laço).
+    id: 'capa', label: 'Capa', layer: 'back', dx: -17, dy: 6,
+    palette: { C: '#c0222f', c: '#8f151f', G: '#ffd23f' },
+    grid: [
+      '...........cGc',
+      '.........ccCCC',
+      '.......ccCCCCC',
+      '......cCCCCCCC',
+      '....ccCCCCCCCC',
+      '...cCCCCCCCCCc',
+      '..cCCCCCCCCCc.',
+      '.cCCCCCCCCCcc.',
+      'cCCCCCCCCCcc..',
+      'cCCCCCCCCcc...',
+    ],
+  },
+  {
+    id: 'mochila', label: 'Mochila', layer: 'back', dx: -17, dy: 6,
+    palette: { M: '#3d8f5a', m: '#2a6a40', Z: '#d9d9e0', S: '#8a5527' },
+    grid: [
+      '..mMMMMm..',
+      '.mMMMMMMm.',
+      '.MMMMMMMM.',
+      '.MMZZZZMM.',
+      '.MMMMMMMM.',
+      '.MmmmmmmM.',
+      '.MMMMMMMM.',
+      '..SSSSSS..',
+    ],
+  },
+  {
+    id: 'chapeu-pirata', label: 'Chapéu de pirata', layer: 'back', dx: -8, dy: -8,
+    palette: { K: '#1d1d26', k: '#3a3a48', W: '#f4f4f4' },
+    grid: [
+      '...kKKKKk...',
+      '..KKKKKKKK..',
+      '.KKKWKWKKKK.',
+      '.KKKKWKKKKK.',
+      'KKKKWKWKKKKK',
+      '.KKKKKKKKK..',
+    ],
+  },
+  {
+    // Tapa-olho: cobre o olho do humor e a tira passa pela cabeça.
+    id: 'tapa-olho', label: 'Tapa-olho', layer: 'front', dx: -8, dy: -4,
+    palette: { K: '#1d1d26', k: '#3a3a48' },
+    grid: [
+      'k...........',
+      '.kk.........',
+      '...kk.......',
+      '......kKKKk.',
+      '.....KKKKKK.',
+      '.....KKKKKK.',
+      '.....KKKKKK.',
+      '......kKKKk.',
+    ],
+  },
   // ---- espaço "mão" (layer 'hand'): dx/dy em relação a frame.grip, de frente para a direita ----
   {
     // Lâmina de 5-6 px saindo do cabo; a ponta fica em grip + (7,0), de onde pinga a gota do lagartinho.

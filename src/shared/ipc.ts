@@ -22,6 +22,7 @@ export const api = {
   getLook: () => invoke<Look>('get_look'),
   setColor: (color: string) => invoke<void>('set_color', { color }),
   setAccessories: (accessories: string[]) => invoke<void>('set_accessories', { accessories }),
+  setSeasonalAccessories: (enabled: boolean) => invoke<void>('set_seasonal_accessories', { enabled }),
   setFreeRoam: (enabled: boolean) => invoke<void>('set_free_roam', { enabled }),
   resetHome: () => invoke<void>('reset_home'),
   setWater: (enabled: boolean, intervalMin: number) => invoke<SettingsView>('set_water', { enabled, intervalMin }),

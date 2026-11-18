@@ -6,7 +6,7 @@ pub const DEFAULT_COLOR: &str = "amarelo";
 pub const COLORS: [&str; 15] = ["amarelo", "laranja", "branco", "cinza", "creme", "rosa", "menta", "azul", "marrom", "lavanda", "preto", "vermelho", "verde", "roxo", "turquesa"];
 
 /// (id, espaço). No máximo um acessório por espaço.
-pub const ACCESSORIES: [(&str, &str); 16] = [
+pub const ACCESSORIES: [(&str, &str); 22] = [
     ("peruca-ruiva", "cabeca"),
     ("peruca-curta", "cabeca"),
     ("chapeu-festa", "cabeca"),
@@ -16,6 +16,12 @@ pub const ACCESSORIES: [(&str, &str); 16] = [
     ("chapeu-capivara", "cabeca"),
     ("oculos", "rosto"),
     ("oculos-escuros", "rosto"),
+    ("gorro-natal", "cabeca"),
+    ("chapeu-bruxa", "cabeca"),
+    ("chapeu-pirata", "cabeca"),
+    ("tapa-olho", "rosto"),
+    ("capa", "pescoco"),
+    ("mochila", "costas"),
     ("fones", "orelha"),
     ("laco", "pescoco"),
     ("flor", "enfeite"),

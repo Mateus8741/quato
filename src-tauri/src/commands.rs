@@ -92,6 +92,11 @@ pub async fn set_accessories(app: AppHandle, accessories: Vec<String>) {
 }
 
 #[tauri::command]
+pub async fn set_seasonal_accessories(app: AppHandle, enabled: bool) {
+    actions::set_seasonal_accessories(&app, enabled);
+}
+
+#[tauri::command]
 pub async fn set_free_roam(app: AppHandle, enabled: bool) {
     actions::set_free_roam(&app, enabled);
 }

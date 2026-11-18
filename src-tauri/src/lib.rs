@@ -50,6 +50,7 @@ pub fn run() {
             commands::water_drank,
             commands::water_test,
             commands::set_dance_on_music,
+            commands::set_seasonal_accessories,
             commands::check_update,
             commands::open_update,
         ])

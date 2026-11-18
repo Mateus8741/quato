@@ -180,6 +180,8 @@ pub struct Config {
     pub notified_update: Option<String>,
     /// Quando avisamos (segundos Unix); depois de 24 h pode lembrar de novo.
     pub notified_at: u64,
+    /// Acessórios sazonais (Natal, Halloween, Ano Novo) quando o espaço está livre. Começa desligado.
+    pub seasonal_accessories: bool,
 }
 
 /// Aparência do pato: o que a janela do pato precisa saber além do `DuckView`.
@@ -188,6 +190,9 @@ pub struct Config {
 pub struct Look {
     pub color: String,
     pub accessories: Vec<String>,
+    /// Espelho de `Config::seasonal_accessories`; quem desenha aplica a data (src/sprites/seasonal.ts).
+    #[serde(default)]
+    pub seasonal: bool,
 }
 
 impl Default for Config {
@@ -206,6 +211,7 @@ impl Default for Config {
             dance_on_music: true,
             notified_update: None,
             notified_at: 0,
+            seasonal_accessories: false,
         }
     }
 }
